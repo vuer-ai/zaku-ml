@@ -299,7 +299,10 @@ export function ExecutionTimeline() {
           {visibleLogData.map((item) => (
             <div
               key={item.id}
-              className={cn("flex items-center relative group", hoveredId === item.id && "bg-gray-800/50")}
+              className={cn(
+                "flex items-center relative group cursor-pointer",
+                hoveredId === item.id && "bg-gray-800/50",
+              )}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
@@ -397,7 +400,7 @@ export function ExecutionTimeline() {
               return (
                 <div
                   key={item.id}
-                  className={cn("relative h-[30px]", hoveredId === item.id && "bg-gray-800/50")}
+                  className={cn("relative h-[30px] cursor-pointer", hoveredId === item.id && "bg-gray-800/50")}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
