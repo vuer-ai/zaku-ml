@@ -87,7 +87,7 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Job halted, waiting for resources...",
     icon: "pause-circle",
-    startTime: 4,
+    startTime: 3.5,
     duration: 2,
   },
   {
@@ -97,9 +97,9 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Waiting for image renderer...",
     icon: "file-code",
-    createTime: 6.0,
-    startTime: 6.5,
-    duration: 7,
+    createTime: 5.5,
+    startTime: 6.0,
+    duration: 5,
     color: "gray-light",
   },
   {
@@ -109,9 +109,9 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Render charts",
     icon: "file-code",
-    createTime: 13.5,
-    startTime: 14,
-    duration: 4.6,
+    createTime: 11.0,
+    startTime: 11.5,
+    duration: 4,
     color: "blue",
   },
   {
@@ -121,6 +121,10 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Assemble PDF",
     icon: "file-code",
+    createTime: 15.5,
+    startTime: 15.7,
+    duration: 1.3,
+    color: "blue",
   },
 ]
 
