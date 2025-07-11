@@ -346,7 +346,7 @@ export function ExecutionTimeline() {
                       />
                     </button>
                   )}
-                  <div className="group-hover:opacity-0 transition-opacity">{getIcon(item)}</div>
+                  <div>{getIcon(item)}</div>
                 </div>
                 <span className="truncate">{item.label}</span>
                 {item.badge && (
