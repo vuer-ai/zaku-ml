@@ -22,16 +22,13 @@ type LogItemData = {
   type: "task" | "attempt" | "info" | "step"
   label: string
   icon?: "history" | "file-code" | "bot" | "check-circle" | "pause-circle"
-  start?: number
+  createTime?: number
+  startTime?: number
   duration?: number
   time?: number
   color?: "blue" | "green" | "orange" | "gray-light"
   isCollapsible?: boolean
   hasStripes?: boolean
-  connection?: {
-    type: "solid" | "dashed"
-    end: number
-  }
 }
 
 const logData: LogItemData[] = [
@@ -51,7 +48,8 @@ const logData: LogItemData[] = [
     type: "task",
     label: "generate-report",
     icon: "file-code",
-    start: 0,
+    createTime: 0,
+    startTime: 0,
     duration: 17,
     color: "blue",
     isCollapsible: true,
@@ -64,7 +62,8 @@ const logData: LogItemData[] = [
     type: "attempt",
     label: "Attempt 1",
     icon: "bot",
-    start: 0.1,
+    createTime: 0.1,
+    startTime: 0.1,
     duration: 16.9,
     color: "blue",
     isCollapsible: true,
@@ -76,10 +75,10 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Fetch database records",
     icon: "check-circle",
-    start: 0.5,
+    createTime: 0.2,
+    startTime: 0.5,
     duration: 3,
     color: "green",
-    connection: { type: "dashed", end: 4 },
   },
   {
     id: "4",
@@ -88,9 +87,8 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Job halted, waiting for resources...",
     icon: "pause-circle",
-    start: 4,
+    startTime: 4,
     duration: 2,
-    connection: { type: "dashed", end: 6.5 },
   },
   {
     id: "5",
@@ -99,10 +97,10 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Waiting for image renderer...",
     icon: "file-code",
-    start: 6.5,
+    createTime: 6.0,
+    startTime: 6.5,
     duration: 7,
     color: "gray-light",
-    connection: { type: "dashed", end: 14 },
   },
   {
     id: "6",
@@ -111,7 +109,8 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Render charts",
     icon: "file-code",
-    start: 14,
+    createTime: 13.5,
+    startTime: 14,
     duration: 4.6,
     color: "blue",
   },
@@ -337,10 +336,6 @@ export function ExecutionTimeline() {
           {/* Timeline Bars */}
           <div className="relative">
             {visibleLogData.map((item) => {
-              const left =
-                item.start !== undefined ? (item.start / TOTAL_DURATION) * 100 : (item.time! / TOTAL_DURATION) * 100
-              const width = item.duration !== undefined ? (item.duration / TOTAL_DURATION) * 100 : 0
-
               const colorClasses = {
                 blue: "bg-blue-500",
                 green: "bg-green-500",
@@ -357,8 +352,25 @@ export function ExecutionTimeline() {
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
-                  {/* Bar */}
-                  {item.start !== undefined && !isHaltedStep && (
+                  {/* Launch Wait Dashed Line */}
+                  {item.createTime !== undefined &&
+                    item.startTime !== undefined &&
+                    item.createTime < item.startTime && (
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 h-2"
+                        style={{
+                          left: `${(item.createTime / TOTAL_DURATION) * 100}%`,
+                          width: `${((item.startTime - item.createTime) / TOTAL_DURATION) * 100}%`,
+                        }}
+                      >
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                        <div className="absolute top-1/2 -translate-y-1/2 w-full border-t border-dashed border-muted-foreground" />
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                      </div>
+                    )}
+
+                  {/* Execution Bar */}
+                  {item.startTime !== undefined && item.duration !== undefined && !isHaltedStep && (
                     <div
                       className={cn(
                         "absolute top-1/2 -translate-y-1/2 h-5 rounded-sm flex items-center justify-center overflow-hidden",
@@ -366,9 +378,12 @@ export function ExecutionTimeline() {
                         item.hasStripes &&
                           "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.1)_4px,rgba(0,0,0,0.1)_8px)]",
                       )}
-                      style={{ left: `${left}%`, width: `${width}%` }}
+                      style={{
+                        left: `${(item.startTime / TOTAL_DURATION) * 100}%`,
+                        width: `${(item.duration / TOTAL_DURATION) * 100}%`,
+                      }}
                     >
-                      {item.duration && width > 5 && (
+                      {(item.duration / TOTAL_DURATION) * 100 > 5 && (
                         <span
                           className={cn(
                             "text-xs font-medium whitespace-nowrap",
@@ -382,11 +397,11 @@ export function ExecutionTimeline() {
                   )}
 
                   {/* Special Halted Step Visualization */}
-                  {isHaltedStep && item.start !== undefined && item.duration !== undefined && (
+                  {isHaltedStep && item.startTime !== undefined && item.duration !== undefined && (
                     <div
                       className="absolute top-1/2 -translate-y-1/2 h-full flex items-center"
                       style={{
-                        left: `${(item.start / TOTAL_DURATION) * 100}%`,
+                        left: `${(item.startTime / TOTAL_DURATION) * 100}%`,
                         width: `${(item.duration / TOTAL_DURATION) * 100}%`,
                       }}
                     >
@@ -401,34 +416,13 @@ export function ExecutionTimeline() {
                     </div>
                   )}
 
-                  {/* Point */}
-                  {item.time !== undefined && !item.start && (
+                  {/* Point in Time Event */}
+                  {item.time !== undefined && (
                     <div
                       className="absolute top-1/2 -translate-y-1/2 size-2 rounded-full"
-                      style={{ left: `calc(${left}% - 4px)` }}
+                      style={{ left: `calc(${(item.time / TOTAL_DURATION) * 100}% - 4px)` }}
                     >
                       {getIcon(item)}
-                    </div>
-                  )}
-                  {/* Connection Line from Bar */}
-                  {item.connection && item.start !== undefined && item.duration !== undefined && (
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 h-2"
-                      style={{
-                        left: `${((item.start + item.duration) / TOTAL_DURATION) * 100}%`,
-                        width: `${((item.connection.end - (item.start + item.duration)) / TOTAL_DURATION) * 100}%`,
-                      }}
-                    >
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                      <div
-                        className={cn(
-                          "absolute top-1/2 -translate-y-1/2 w-full h-px",
-                          item.connection.type === "solid"
-                            ? "bg-muted-foreground"
-                            : "border-t border-dashed border-muted-foreground",
-                        )}
-                      />
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                     </div>
                   )}
                 </div>
