@@ -1,38 +1,28 @@
-// Based on the provided user schema from a service like Clerk
-export interface ClerkUser {
-  id: string
-  username: string | null
-  first_name: string
-  last_name: string
-  image_url: string
-  has_image: boolean
-  primary_email_address_id: string
-  email_addresses: {
-    id: string
-    email_address: string
-    verification: {
-      status: "verified" | "unverified"
-      strategy: string
-    }
-  }[]
-  last_sign_in_at: number | null
-  banned: boolean
-  locked: boolean
-  created_at: number
-  updated_at: number
-  profile_image_url: string
-}
-
-// A more standard organization schema
-export interface Organization {
+export interface Project {
   id: string
   name: string
-  slug: string
-  members: number
-  plan: "Enterprise" | "Pro" | "Basic"
-  status: "Active" | "Inactive"
+  description: string
+  jobCount: number
+}
+
+export type LogItemType = "task" | "attempt" | "info" | "success" | "error" | "log" | "registered" | "halted"
+
+export interface LogItem {
+  id: string
+  name: string
+  type: LogItemType
+  status: "completed" | "in-progress" | "failed" | "queued"
+  startTime: number // ms, relative to job start
+  duration: number // ms
+  children?: LogItem[]
+}
+
+export interface Job {
+  id: string
+  projectId: string
+  name: string
+  status: "completed" | "in-progress" | "failed"
+  totalDuration: number // ms
   createdAt: string
-  public_metadata?: {
-    [key: string]: any
-  }
+  logs: LogItem[]
 }
