@@ -350,7 +350,7 @@ export function ExecutionTimeline() {
                     {getIcon(item)}
                   </div>
                 </div>
-                <span className="truncate">{item.label}</span>
+                <span className="truncate m-0 -ml-0.25 border-0">{item.label}</span>
                 {item.badge && (
                   <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-md font-mono">
                     {item.badge}
@@ -402,7 +402,7 @@ export function ExecutionTimeline() {
               return (
                 <div
                   key={item.id}
-                  className={cn("relative h-[30px] cursor-pointer", hoveredId === item.id && "bg-gray-800/50")}
+                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-gray-800/50")}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
@@ -416,8 +416,11 @@ export function ExecutionTimeline() {
                       )}
                       style={{ left: `${left}%`, width: `${width}%` }}
                     >
-                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 h-full w-px bg-blue-400">
-                        <div className="absolute -left-px top-1/2 -translate-y-1/2 h-px w-2 bg-blue-400" />
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-px bg-blue-400">
+                        <div
+                            className="absolute left top-1/2 -translate-y-1/2 h-px bg-blue-400"
+                            style={{width: "10px"}}
+                        />
                       </div>
                     </div>
                   )}
