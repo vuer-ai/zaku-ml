@@ -31,6 +31,8 @@ type LogItemData = {
   connection?: {
     type: "solid" | "dashed"
     end: number
+    label?: string
+    labelDuration?: number
   }
 }
 
@@ -79,19 +81,12 @@ const logData: LogItemData[] = [
     start: 0.5,
     duration: 3,
     color: "green",
-    connection: { type: "dashed", end: 4 },
-  },
-  {
-    id: "4",
-    parentId: "2",
-    indent: 2,
-    type: "step",
-    label: "Job halted, waiting for resources...",
-    icon: "pause-circle",
-    start: 4,
-    duration: 2,
-    color: "yellow",
-    connection: { type: "dashed", end: 6.5 },
+    connection: {
+      type: "dashed",
+      end: 6.5,
+      label: "Halted",
+      labelDuration: 2,
+    },
   },
   {
     id: "5",
@@ -166,10 +161,7 @@ const formatDuration = (seconds: number) => {
   if (seconds < 1) {
     return `${Math.round(seconds * 1000)}ms`
   }
-  if (seconds < 10) {
-    return `${seconds.toFixed(1)}s`
-  }
-  return `${Math.round(seconds)}s`
+  return `${seconds.toFixed(2)}s`
 }
 
 export function ExecutionTimeline() {
@@ -393,21 +385,33 @@ export function ExecutionTimeline() {
                   )}
                   {/* Connection Line from Bar */}
                   {item.connection && item.start !== undefined && item.duration !== undefined && (
-                    <div
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-px",
-                        item.connection.type === "solid"
-                          ? "bg-muted-foreground"
-                          : "border-t border-dashed border-muted-foreground",
+                    <>
+                      <div
+                        className={cn(
+                          "absolute top-1/2 -translate-y-1/2 h-px",
+                          item.connection.type === "solid"
+                            ? "bg-muted-foreground"
+                            : "border-t border-dashed border-muted-foreground",
+                        )}
+                        style={{
+                          left: `${((item.start + item.duration) / TOTAL_DURATION) * 100}%`,
+                          width: `${((item.connection.end - (item.start + item.duration)) / TOTAL_DURATION) * 100}%`,
+                        }}
+                      />
+                      {item.connection.label && item.connection.labelDuration && (
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 z-10"
+                          style={{
+                            left: `${((item.start + item.duration + item.connection.end) / 2 / TOTAL_DURATION) * 100}%`,
+                            transform: "translate(-50%, -50%)",
+                          }}
+                        >
+                          <div className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 text-xs font-medium whitespace-nowrap">
+                            {item.connection.label} {formatDuration(item.connection.labelDuration)}
+                          </div>
+                        </div>
                       )}
-                      style={{
-                        left: `${((item.start + item.duration) / TOTAL_DURATION) * 100}%`,
-                        width: `${((item.connection.end - (item.start + item.duration)) / TOTAL_DURATION) * 100}%`,
-                      }}
-                    >
-                      <div className="absolute -left-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                      <div className="absolute -right-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                    </div>
+                    </>
                   )}
                 </div>
               )
