@@ -90,7 +90,6 @@ const logData: LogItemData[] = [
     icon: "pause-circle",
     start: 4,
     duration: 2,
-    color: "orange",
     connection: { type: "dashed", end: 6.5 },
   },
   {
@@ -349,6 +348,8 @@ export function ExecutionTimeline() {
                 "gray-light": "bg-muted",
               }
 
+              const isHaltedStep = item.id === "4"
+
               return (
                 <div
                   key={item.id}
@@ -357,7 +358,7 @@ export function ExecutionTimeline() {
                   onMouseLeave={() => setHoveredId(null)}
                 >
                   {/* Bar */}
-                  {item.start !== undefined && (
+                  {item.start !== undefined && !isHaltedStep && (
                     <div
                       className={cn(
                         "absolute top-1/2 -translate-y-1/2 h-5 rounded-sm flex items-center justify-center overflow-hidden",
@@ -379,6 +380,27 @@ export function ExecutionTimeline() {
                       )}
                     </div>
                   )}
+
+                  {/* Special Halted Step Visualization */}
+                  {isHaltedStep && item.start !== undefined && item.duration !== undefined && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 h-full flex items-center"
+                      style={{
+                        left: `${(item.start / TOTAL_DURATION) * 100}%`,
+                        width: `${(item.duration / TOTAL_DURATION) * 100}%`,
+                      }}
+                    >
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                        <div className="w-full border-t border-dashed border-muted-foreground" />
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                        <div className="absolute z-10 px-2 py-0.5 rounded-full bg-orange-500 text-white text-xs font-medium whitespace-nowrap">
+                          {formatDuration(item.duration)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Point */}
                   {item.time !== undefined && !item.start && (
                     <div
