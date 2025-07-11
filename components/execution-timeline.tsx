@@ -346,7 +346,9 @@ export function ExecutionTimeline() {
                       />
                     </button>
                   )}
-                  <div>{getIcon(item)}</div>
+                  <div className={cn("transition-opacity", item.isCollapsible && "group-hover:opacity-0")}>
+                    {getIcon(item)}
+                  </div>
                 </div>
                 <span className="truncate">{item.label}</span>
                 {item.badge && (
