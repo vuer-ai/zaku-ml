@@ -307,7 +307,7 @@ export function ExecutionTimeline() {
               onMouseLeave={() => setHoveredId(null)}
             >
               {/* Guide Lines */}
-              <div className="absolute left-0 top-0 h-full flex items-center z-10">
+              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-10">
                 {item.ancestors.map((ancestor, index) => {
                   const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
                   return (
@@ -318,7 +318,7 @@ export function ExecutionTimeline() {
                   )
                 })}
                 {item.indent > 0 && (
-                  <div className="w-[1.25rem] h-full relative">
+                  <div className="w-[1.24rem] h-full relative">
                     <div
                       className={cn(
                         "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
