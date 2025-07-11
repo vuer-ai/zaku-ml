@@ -235,84 +235,79 @@ export function ExecutionTimeline() {
 
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
-      <div className="flex items-center p-2 border-b">
-        <div className="flex items-center gap-2 flex-1">
-          <Search className="size-4 text-muted-foreground" />
-          <input type="text" placeholder="Search logs" className="bg-transparent text-sm focus:outline-none w-full" />
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <button className="p-1 hover:bg-accent rounded">
-            <ChevronLeft className="size-4" />
-          </button>
-          <span>0.0s</span>
-          <button className="p-1 hover:bg-accent rounded">
-            <ChevronRight className="size-4" />
-          </button>
-        </div>
-      </div>
-
       <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
         {/* Sidebar */}
-        <div className="border-r overflow-x-auto">
-          <div className="h-8" /> {/* Spacer for timeline header */}
-          {visibleLogData.map((item) => (
-            <div
-              key={item.id}
-              className={cn(
-                "flex items-center relative group cursor-pointer h-[32px]",
-                hoveredId === item.id && "bg-accent",
-              )}
-              onMouseEnter={() => setHoveredId(item.id)}
-              onMouseLeave={() => setHoveredId(null)}
-            >
-              {/* Guide Lines */}
-              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
-                {item.ancestors.map((ancestor, index) => {
-                  const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
-                  return (
-                    <div
-                      key={index}
-                      className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
-                    />
-                  )
-                })}
-                {item.indent > 0 && (
-                  <div className="w-[1.24rem] h-full relative">
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
-                        item.isLast ? "rounded-bl-md" : "",
-                        "border-border/50",
-                      )}
-                    />
-                    {!item.isLast && <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-border/50" />}
-                  </div>
-                )}
-              </div>
-
+        <div className="border-r flex flex-col">
+          <div className="flex items-center p-2 border-b h-[33px]">
+            <Search className="size-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search logs"
+              className="bg-transparent text-sm focus:outline-none w-full ml-2"
+            />
+          </div>
+          <div className="overflow-y-auto">
+            {visibleLogData.map((item) => (
               <div
-                className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10"
-                style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
+                key={item.id}
+                className={cn(
+                  "flex items-center relative group cursor-pointer h-[32px]",
+                  hoveredId === item.id && "bg-accent",
+                )}
+                onMouseEnter={() => setHoveredId(item.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
-                <div className="relative size-4 flex items-center justify-center">
-                  {item.isCollapsible && (
-                    <button
-                      onClick={() => toggleItem(item.id)}
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                    >
-                      <ChevronDown
-                        className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
+                {/* Guide Lines */}
+                <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
+                  {item.ancestors.map((ancestor, index) => {
+                    const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
+                    return (
+                      <div
+                        key={index}
+                        className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
                       />
-                    </button>
+                    )
+                  })}
+                  {item.indent > 0 && (
+                    <div className="w-[1.24rem] h-full relative">
+                      <div
+                        className={cn(
+                          "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
+                          item.isLast ? "rounded-bl-md" : "",
+                          "border-border/50",
+                        )}
+                      />
+                      {!item.isLast && (
+                        <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-border/50" />
+                      )}
+                    </div>
                   )}
-                  <div className={cn("transition-opacity", item.isCollapsible && "group-hover:opacity-0")}>
-                    {getIcon(item)}
-                  </div>
                 </div>
-                <span className="truncate">{item.label}</span>
+
+                <div
+                  className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10"
+                  style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
+                >
+                  <div className="relative size-4 flex items-center justify-center">
+                    {item.isCollapsible && (
+                      <button
+                        onClick={() => toggleItem(item.id)}
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      >
+                        <ChevronDown
+                          className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
+                        />
+                      </button>
+                    )}
+                    <div className={cn("transition-opacity", item.isCollapsible && "group-hover:opacity-0")}>
+                      {getIcon(item)}
+                    </div>
+                  </div>
+                  <span className="truncate">{item.label}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Timeline */}
@@ -334,7 +329,7 @@ export function ExecutionTimeline() {
           </div>
 
           {/* Timeline Bars */}
-          <div className="relative">
+          <div className="relative pb-12">
             {visibleLogData.map((item) => {
               const colorClasses = {
                 blue: "bg-blue-500",
@@ -428,6 +423,17 @@ export function ExecutionTimeline() {
                 </div>
               )
             })}
+          </div>
+          <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
+            <div className="flex items-center gap-2 text-sm bg-card border rounded-full p-1 shadow-lg">
+              <button className="p-1 hover:bg-accent rounded-full">
+                <ChevronLeft className="size-4" />
+              </button>
+              <span>0.0s</span>
+              <button className="p-1 hover:bg-accent rounded-full">
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
