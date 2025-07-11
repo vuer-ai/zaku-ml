@@ -1,7 +1,18 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { ChevronDown, History, FileCode2, Server, CheckCircle2, PauseCircle, FileText } from "lucide-react"
+import {
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Info,
+  History,
+  FileCode,
+  Bot,
+  CheckCircle2,
+  PauseCircle,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type LogItemData = {
@@ -10,16 +21,13 @@ type LogItemData = {
   indent: number
   type: "task" | "attempt" | "info" | "step"
   label: string
-  icon: "queue" | "task" | "attempt" | "success" | "halted" | "generic"
+  icon?: "history" | "file-code" | "bot" | "check-circle" | "pause-circle"
   start?: number
   duration?: number
   time?: number
-  color?: "blue" | "green" | "yellow" | "gray"
+  color?: "blue" | "green" | "yellow" | "gray-light"
   isCollapsible?: boolean
-  connection?: {
-    type: "solid" | "dashed"
-    end: number
-  }
+  hasStripes?: boolean
 }
 
 const logData: LogItemData[] = [
@@ -29,8 +37,8 @@ const logData: LogItemData[] = [
     indent: 0,
     type: "info",
     label: "Job registered in queue",
-    icon: "queue",
-    time: 0.5,
+    icon: "history",
+    time: 0,
   },
   {
     id: "1",
@@ -38,11 +46,12 @@ const logData: LogItemData[] = [
     indent: 0,
     type: "task",
     label: "generate-report",
-    icon: "task",
-    start: 1,
+    icon: "file-code",
+    start: 0,
     duration: 17,
     color: "blue",
     isCollapsible: true,
+    hasStripes: true,
   },
   {
     id: "2",
@@ -50,8 +59,8 @@ const logData: LogItemData[] = [
     indent: 1,
     type: "attempt",
     label: "Attempt 1",
-    icon: "attempt",
-    start: 1.5,
+    icon: "bot",
+    start: 0.1,
     duration: 16.9,
     color: "blue",
     isCollapsible: true,
@@ -62,8 +71,8 @@ const logData: LogItemData[] = [
     indent: 2,
     type: "step",
     label: "Fetch database records",
-    icon: "success",
-    start: 2,
+    icon: "check-circle",
+    start: 0.5,
     duration: 3,
     color: "green",
   },
@@ -73,8 +82,8 @@ const logData: LogItemData[] = [
     indent: 2,
     type: "step",
     label: "Job halted, waiting for resources...",
-    icon: "halted",
-    start: 5.5,
+    icon: "pause-circle",
+    start: 4,
     duration: 2,
     color: "yellow",
   },
@@ -84,10 +93,10 @@ const logData: LogItemData[] = [
     indent: 2,
     type: "step",
     label: "Waiting for image renderer...",
-    icon: "generic",
-    start: 8,
+    icon: "file-code",
+    start: 6.5,
     duration: 7,
-    color: "gray",
+    color: "gray-light",
   },
   {
     id: "6",
@@ -95,8 +104,8 @@ const logData: LogItemData[] = [
     indent: 2,
     type: "step",
     label: "Render charts",
-    icon: "generic",
-    start: 15.5,
+    icon: "file-code",
+    start: 14,
     duration: 4.6,
     color: "blue",
   },
@@ -106,10 +115,7 @@ const logData: LogItemData[] = [
     indent: 2,
     type: "step",
     label: "Assemble PDF",
-    icon: "generic",
-    start: 16,
-    duration: 2,
-    color: "gray",
+    icon: "file-code",
   },
 ]
 
@@ -127,33 +133,36 @@ const timeMarkers = [
 ]
 
 const getIcon = (item: LogItemData) => {
-  const iconProps = { className: "size-4 shrink-0" }
+  const iconColor = (item: LogItemData) => {
+    if (item.label === "generate-report" || item.label === "Assemble PDF") return "text-blue-500"
+    if (item.icon === "file-code") return "text-muted-foreground"
+    return ""
+  }
+
   switch (item.icon) {
-    case "queue":
-      return <History {...iconProps} color="#A855F7" />
-    case "task":
-      return <FileCode2 {...iconProps} color="#2563EB" />
-    case "attempt":
-      return <Server {...iconProps} className="size-4 shrink-0 text-gray-500" />
-    case "success":
-      return <CheckCircle2 {...iconProps} color="#22C55E" />
-    case "halted":
-      return <PauseCircle {...iconProps} color="#F97316" />
-    case "generic":
-      return <FileText {...iconProps} className="size-4 shrink-0 text-gray-500" />
+    case "history":
+      return <History className="size-4 text-purple-500 shrink-0" />
+    case "file-code":
+      return <FileCode className={cn("size-4 shrink-0", iconColor(item))} />
+    case "bot":
+      return <Bot className="size-4 text-muted-foreground shrink-0" />
+    case "check-circle":
+      return <CheckCircle2 className="size-4 text-green-500 shrink-0" />
+    case "pause-circle":
+      return <PauseCircle className="size-4 text-orange-500 shrink-0" />
     default:
-      return <div className="size-4" />
+      return <Info className="size-4 text-muted-foreground shrink-0" />
   }
 }
 
 const formatDuration = (seconds: number) => {
-  if (seconds < 0.1) {
+  if (seconds < 1) {
     return `${Math.round(seconds * 1000)}ms`
   }
   if (seconds < 10) {
-    return `${seconds.toFixed(2)}s`
+    return `${seconds.toFixed(1)}s`
   }
-  return `${seconds.toFixed(2)}s`
+  return `${Math.round(seconds)}s`
 }
 
 export function ExecutionTimeline() {
@@ -217,78 +226,88 @@ export function ExecutionTimeline() {
   }, [childrenMap])
 
   const isVisible = (item: { ancestors: LogItemData[] }) => {
-    if (item.ancestors.length === 0) return true
     return item.ancestors.every((ancestor) => expandedItems.has(ancestor.id))
   }
 
   const visibleLogData = logDataWithMeta.filter(isVisible)
 
   return (
-    <div className="bg-white text-gray-800 font-sans rounded-lg border w-full max-w-4xl mx-auto shadow-lg overflow-hidden">
-      <div className="grid grid-cols-[minmax(300px,35%)_1fr]">
+    <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
+      <div className="flex items-center p-2 border-b">
+        <div className="flex items-center gap-2 flex-1">
+          <Search className="size-4 text-muted-foreground" />
+          <input type="text" placeholder="Search logs" className="bg-transparent text-sm focus:outline-none w-full" />
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <button className="p-1 hover:bg-accent rounded">
+            <ChevronLeft className="size-4" />
+          </button>
+          <span>0.0s</span>
+          <button className="p-1 hover:bg-accent rounded">
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
         {/* Sidebar */}
-        <div className="border-r border-gray-200 overflow-x-auto">
+        <div className="border-r overflow-x-auto">
           <div className="h-8" /> {/* Spacer for timeline header */}
           {visibleLogData.map((item) => (
             <div
               key={item.id}
               className={cn(
                 "flex items-center relative group cursor-pointer h-[32px]",
-                hoveredId === item.id && "bg-gray-100",
+                hoveredId === item.id && "bg-accent",
               )}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
               {/* Guide Lines */}
-              <div className="absolute left-0 top-0 h-full flex items-center z-0">
+              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
                 {item.ancestors.map((ancestor, index) => {
                   const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
                   return (
                     <div
                       key={index}
-                      className={cn("w-[20px] h-full", parentIsLast ? "" : "border-l-2", "border-gray-200")}
+                      className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
                     />
                   )
                 })}
                 {item.indent > 0 && (
-                  <div className="w-[20px] h-full relative">
+                  <div className="w-[1.24rem] h-full relative">
                     <div
                       className={cn(
-                        "absolute top-0 left-[9px] w-1/2 h-1/2 border-b-2 border-l-2",
+                        "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
                         item.isLast ? "rounded-bl-md" : "",
-                        "border-gray-200",
+                        "border-border/50",
                       )}
                     />
-                    {!item.isLast && (
-                      <div className="absolute top-1/2 left-[9px] w-1/2 h-1/2 border-l-2 border-gray-200" />
-                    )}
+                    {!item.isLast && <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-border/50" />}
                   </div>
                 )}
               </div>
 
               <div
-                className="flex items-center gap-2 pr-2 text-sm whitespace-nowrap w-full z-10 bg-white group-hover:bg-gray-100"
-                style={{ paddingLeft: `${item.indent * 20 + 8}px` }}
+                className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10 bg-card"
+                style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
               >
                 <div className="relative size-4 flex items-center justify-center">
                   {item.isCollapsible && (
                     <button
                       onClick={() => toggleItem(item.id)}
-                      className="absolute inset-0 flex items-center justify-center z-20"
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
                     >
                       <ChevronDown
-                        className={cn(
-                          "size-4 transition-transform text-gray-400",
-                          !expandedItems.has(item.id) && "-rotate-90",
-                        )}
+                        className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
                       />
                     </button>
                   )}
+                  <div className={cn("transition-opacity", item.isCollapsible && "group-hover:opacity-0")}>
+                    {getIcon(item)}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getIcon(item)}
-                  <span className="truncate">{item.label}</span>
-                </div>
+                <span className="truncate">{item.label}</span>
               </div>
             </div>
           ))}
@@ -297,16 +316,16 @@ export function ExecutionTimeline() {
         {/* Timeline */}
         <div className="relative overflow-x-auto">
           {/* Time Ruler */}
-          <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm">
-            <div className="relative h-8 border-b border-gray-200">
+          <div className="sticky top-0 z-10 bg-card">
+            <div className="relative h-8 border-b">
               {timeMarkers.map((marker) => (
                 <div
                   key={marker.time}
                   className="absolute top-0 h-full"
                   style={{ left: `${(marker.time / TOTAL_DURATION) * 100}%` }}
                 >
-                  <span className="absolute top-1 -translate-x-1/2 text-xs text-gray-500">{marker.label}</span>
-                  <div className="h-full w-px bg-gray-200" />
+                  <span className="absolute top-1 -translate-x-1/2 text-xs text-muted-foreground">{marker.label}</span>
+                  <div className="h-full w-px bg-border" />
                 </div>
               ))}
             </div>
@@ -320,34 +339,49 @@ export function ExecutionTimeline() {
               const width = item.duration !== undefined ? (item.duration / TOTAL_DURATION) * 100 : 0
 
               const colorClasses = {
-                blue: "bg-timeline-blue",
-                green: "bg-timeline-green",
-                yellow: "bg-timeline-yellow",
-                gray: "bg-timeline-gray",
+                blue: "bg-blue-500",
+                green: "bg-green-500",
+                yellow: "bg-yellow-500",
+                "gray-light": "bg-muted",
               }
 
               return (
                 <div
                   key={item.id}
-                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-gray-100")}
+                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-accent")}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
                   {/* Bar */}
-                  {item.start !== undefined && item.duration !== undefined && (
+                  {item.start !== undefined && (
                     <div
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-6 rounded-md flex items-center justify-end pr-2",
+                        "absolute top-1/2 -translate-y-1/2 h-5 rounded-sm flex items-center overflow-hidden",
                         item.color && colorClasses[item.color],
+                        item.hasStripes &&
+                          "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.1)_4px,rgba(0,0,0,0.1)_8px)]",
                       )}
                       style={{ left: `${left}%`, width: `${width}%` }}
                     >
-                      {item.id === "1" && (
-                        <div className="absolute inset-0 bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.05)_4px,rgba(0,0,0,0.05)_8px)]" />
+                      {item.duration && width > 5 && (
+                        <span
+                          className={cn(
+                            "px-2 text-xs font-medium whitespace-nowrap",
+                            item.color === "gray-light" ? "text-muted-foreground" : "text-white",
+                          )}
+                        >
+                          {formatDuration(item.duration)}
+                        </span>
                       )}
-                      <span className="text-xs text-gray-800 font-medium relative">
-                        {formatDuration(item.duration)}
-                      </span>
+                    </div>
+                  )}
+                  {/* Point */}
+                  {item.time !== undefined && !item.start && (
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 size-2 rounded-full"
+                      style={{ left: `calc(${left}% - 4px)` }}
+                    >
+                      {getIcon(item)}
                     </div>
                   )}
                 </div>
