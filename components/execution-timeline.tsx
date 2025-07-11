@@ -28,6 +28,10 @@ type LogItemData = {
   color?: "blue" | "green" | "yellow" | "gray-light"
   isCollapsible?: boolean
   hasStripes?: boolean
+  connection?: {
+    type: "solid" | "dashed"
+    end: number
+  }
 }
 
 const logData: LogItemData[] = [
@@ -77,6 +81,15 @@ const logData: LogItemData[] = [
     color: "green",
   },
   {
+    id: "3.1",
+    parentId: "2",
+    indent: 2,
+    type: "info",
+    label: "",
+    time: 3.5,
+    connection: { type: "dashed", end: 4 },
+  },
+  {
     id: "4",
     parentId: "2",
     indent: 2,
@@ -88,6 +101,15 @@ const logData: LogItemData[] = [
     color: "yellow",
   },
   {
+    id: "4.1",
+    parentId: "2",
+    indent: 2,
+    type: "info",
+    label: "",
+    time: 6,
+    connection: { type: "dashed", end: 6.5 },
+  },
+  {
     id: "5",
     parentId: "2",
     indent: 2,
@@ -97,6 +119,15 @@ const logData: LogItemData[] = [
     start: 6.5,
     duration: 7,
     color: "gray-light",
+  },
+  {
+    id: "5.1",
+    parentId: "2",
+    indent: 2,
+    type: "info",
+    label: "",
+    time: 13.5,
+    connection: { type: "dashed", end: 14 },
   },
   {
     id: "6",
@@ -160,7 +191,7 @@ const formatDuration = (seconds: number) => {
     return `${Math.round(seconds * 1000)}ms`
   }
   if (seconds < 10) {
-    return `${seconds.toFixed(1)}s`
+    return `${seconds.toFixed(2)}s`
   }
   return `${Math.round(seconds)}s`
 }
@@ -253,64 +284,69 @@ export function ExecutionTimeline() {
         {/* Sidebar */}
         <div className="border-r overflow-x-auto">
           <div className="h-8" /> {/* Spacer for timeline header */}
-          {visibleLogData.map((item) => (
-            <div
-              key={item.id}
-              className={cn(
-                "flex items-center relative group cursor-pointer h-[32px]",
-                hoveredId === item.id && "bg-accent",
-              )}
-              onMouseEnter={() => setHoveredId(item.id)}
-              onMouseLeave={() => setHoveredId(null)}
-            >
-              {/* Guide Lines */}
-              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
-                {item.ancestors.map((ancestor, index) => {
-                  const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
-                  return (
-                    <div
-                      key={index}
-                      className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
-                    />
-                  )
-                })}
-                {item.indent > 0 && (
-                  <div className="w-[1.24rem] h-full relative">
-                    <div
-                      className={cn(
-                        "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
-                        item.isLast ? "rounded-bl-md" : "",
-                        "border-border/50",
-                      )}
-                    />
-                    {!item.isLast && <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-border/50" />}
-                  </div>
-                )}
-              </div>
-
+          {visibleLogData.map((item) => {
+            if (item.type === "info" && !item.label) return null
+            return (
               <div
-                className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10 bg-card"
-                style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
+                key={item.id}
+                className={cn(
+                  "flex items-center relative group cursor-pointer h-[32px]",
+                  hoveredId === item.id && "bg-accent",
+                )}
+                onMouseEnter={() => setHoveredId(item.id)}
+                onMouseLeave={() => setHoveredId(null)}
               >
-                <div className="relative size-4 flex items-center justify-center">
-                  {item.isCollapsible && (
-                    <button
-                      onClick={() => toggleItem(item.id)}
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                    >
-                      <ChevronDown
-                        className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
+                {/* Guide Lines */}
+                <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
+                  {item.ancestors.map((ancestor, index) => {
+                    const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
+                    return (
+                      <div
+                        key={index}
+                        className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
                       />
-                    </button>
+                    )
+                  })}
+                  {item.indent > 0 && (
+                    <div className="w-[1.24rem] h-full relative">
+                      <div
+                        className={cn(
+                          "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
+                          item.isLast ? "rounded-bl-md" : "",
+                          "border-border/50",
+                        )}
+                      />
+                      {!item.isLast && (
+                        <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-border/50" />
+                      )}
+                    </div>
                   )}
-                  <div className={cn("transition-opacity", item.isCollapsible && "group-hover:opacity-0")}>
-                    {getIcon(item)}
-                  </div>
                 </div>
-                <span className="truncate">{item.label}</span>
+
+                <div
+                  className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10"
+                  style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
+                >
+                  <div className="relative size-4 flex items-center justify-center">
+                    {item.isCollapsible && (
+                      <button
+                        onClick={() => toggleItem(item.id)}
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      >
+                        <ChevronDown
+                          className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
+                        />
+                      </button>
+                    )}
+                    <div className={cn("transition-opacity", item.isCollapsible && "group-hover:opacity-0")}>
+                      {getIcon(item)}
+                    </div>
+                  </div>
+                  <span className="truncate">{item.label}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Timeline */}
@@ -356,7 +392,7 @@ export function ExecutionTimeline() {
                   {item.start !== undefined && (
                     <div
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-5 rounded-sm flex items-center overflow-hidden",
+                        "absolute top-1/2 -translate-y-1/2 h-5 rounded-sm flex items-center justify-center overflow-hidden",
                         item.color && colorClasses[item.color],
                         item.hasStripes &&
                           "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.1)_4px,rgba(0,0,0,0.1)_8px)]",
@@ -366,7 +402,7 @@ export function ExecutionTimeline() {
                       {item.duration && width > 5 && (
                         <span
                           className={cn(
-                            "px-2 text-xs font-medium whitespace-nowrap",
+                            "text-xs font-medium whitespace-nowrap",
                             item.color === "gray-light" ? "text-muted-foreground" : "text-white",
                           )}
                         >
@@ -382,6 +418,24 @@ export function ExecutionTimeline() {
                       style={{ left: `calc(${left}% - 4px)` }}
                     >
                       {getIcon(item)}
+                    </div>
+                  )}
+                  {/* Connection Line */}
+                  {item.connection && (
+                    <div
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 h-px",
+                        item.connection.type === "solid"
+                          ? "bg-muted-foreground"
+                          : "border-t border-dashed border-muted-foreground",
+                      )}
+                      style={{
+                        left: `${(item.time! / TOTAL_DURATION) * 100}%`,
+                        width: `${((item.connection.end - item.time!) / TOTAL_DURATION) * 100}%`,
+                      }}
+                    >
+                      <div className="absolute -left-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                      <div className="absolute -right-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                     </div>
                   )}
                 </div>
