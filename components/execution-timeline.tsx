@@ -50,7 +50,7 @@ const logData: LogItemData[] = [
     icon: "file-code",
     createTime: 0,
     startTime: 0,
-    duration: 17,
+    duration: 20,
     color: "blue",
     isCollapsible: true,
     hasStripes: true,
@@ -64,7 +64,7 @@ const logData: LogItemData[] = [
     icon: "bot",
     createTime: 0.1,
     startTime: 0.1,
-    duration: 16.9,
+    duration: 19.9,
     color: "blue",
     isCollapsible: true,
   },
@@ -87,7 +87,7 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Job halted, waiting for resources...",
     icon: "pause-circle",
-    startTime: 3.5,
+    startTime: 4,
     duration: 2,
   },
   {
@@ -97,9 +97,9 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Waiting for image renderer...",
     icon: "file-code",
-    createTime: 5.5,
-    startTime: 6.0,
-    duration: 5,
+    createTime: 6.0,
+    startTime: 6.5,
+    duration: 7,
     color: "gray-light",
   },
   {
@@ -109,9 +109,9 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Render charts",
     icon: "file-code",
-    createTime: 11.0,
-    startTime: 11.5,
-    duration: 4,
+    createTime: 13.5,
+    startTime: 14,
+    duration: 4.6,
     color: "blue",
   },
   {
@@ -121,14 +121,14 @@ const logData: LogItemData[] = [
     type: "step",
     label: "Assemble PDF",
     icon: "file-code",
-    createTime: 15.5,
-    startTime: 15.7,
-    duration: 1.3,
-    color: "blue",
+    createTime: 18.6,
+    startTime: 18.8,
+    duration: 1.2,
+    color: "green",
   },
 ]
 
-const TOTAL_DURATION = 18
+const TOTAL_DURATION = 22
 const timeMarkers = [
   { time: 2, label: "2s" },
   { time: 4, label: "4s" },
@@ -139,6 +139,8 @@ const timeMarkers = [
   { time: 14, label: "14s" },
   { time: 16, label: "16s" },
   { time: 18, label: "18s" },
+  { time: 20, label: "20s" },
+  { time: 22, label: "22s" },
 ]
 
 const getIcon = (item: LogItemData) => {
