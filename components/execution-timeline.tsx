@@ -333,20 +333,17 @@ export function ExecutionTimeline() {
                 style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
               >
                 <div className="relative size-4 flex items-center justify-center">
-                  {getIcon(item)}
                   {item.isCollapsible && (
                     <button
                       onClick={() => toggleItem(item.id)}
-                      className="absolute inset-0 flex items-center justify-center"
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
                     >
                       <ChevronDown
-                        className={cn(
-                          "size-4 transition-transform text-white/70 hover:text-white",
-                          !expandedItems.has(item.id) && "-rotate-90",
-                        )}
+                        className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
                       />
                     </button>
                   )}
+                  <div className="group-hover:opacity-0 transition-opacity">{getIcon(item)}</div>
                 </div>
                 <span className="truncate">{item.label}</span>
                 {item.badge && (
@@ -414,8 +411,8 @@ export function ExecutionTimeline() {
                       )}
                       style={{ left: `${left}%`, width: `${width}%` }}
                     >
-                      <div className="absolute -left-[2px] top-1/2 -translate-y-1/2 h-full w-px bg-blue-400">
-                        <div className="absolute -left-[2px] top-1/2 -translate-y-1/2 h-px w-[2px] bg-blue-400" />
+                      <div className="absolute -left-2 top-1/2 -translate-y-1/2 h-full w-px bg-blue-400">
+                        <div className="absolute -left-px top-1/2 -translate-y-1/2 h-px w-2 bg-blue-400" />
                       </div>
                     </div>
                   )}
@@ -434,7 +431,7 @@ export function ExecutionTimeline() {
                         item.connection.type === "solid" ? "bg-gray-600" : "border-t border-dashed border-gray-600",
                       )}
                       style={{
-                        left: `calc(${(item.time! / TOTAL_DURATION) * 100}% - 3px)`,
+                        left: `${(item.time! / TOTAL_DURATION) * 100}%`,
                         width: `${((item.connection.end - item.time!) / TOTAL_DURATION) * 100}%`,
                       }}
                     >
