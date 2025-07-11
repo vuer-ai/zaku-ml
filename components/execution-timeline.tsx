@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, ChevronLeft, ChevronRight, ChevronDown, Info, RefreshCw, Cloud, Check } from "lucide-react"
+import { ChevronDown, History, FileCode2, Cpu, CheckCircle2, PauseCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type LogItemData = {
@@ -10,29 +10,34 @@ type LogItemData = {
   indent: number
   type: "task" | "attempt" | "info" | "step"
   label: string
-  badge?: string
-  icon?: "ffmpeg" | "swirl" | "aws"
+  icon: "history" | "file-code" | "cpu" | "check-circle" | "pause-circle"
   start?: number
   duration?: number
   time?: number
-  color?: "blue" | "green" | "gray-dark" | "gray-light"
+  color: "purple" | "blue" | "gray" | "green" | "yellow"
   isCollapsible?: boolean
-  connection?: {
-    type: "solid" | "dashed"
-    end: number
-  }
 }
 
 const logData: LogItemData[] = [
+  {
+    id: "0",
+    parentId: null,
+    indent: 0,
+    type: "info",
+    label: "Job registered in queue",
+    icon: "history",
+    time: 0.5,
+    color: "purple",
+  },
   {
     id: "1",
     parentId: null,
     indent: 0,
     type: "task",
-    label: "transcribe-video",
-    badge: "ROOT",
+    label: "generate-report",
+    icon: "file-code",
     start: 1,
-    duration: 23,
+    duration: 17,
     color: "blue",
     isCollapsible: true,
   },
@@ -42,166 +47,94 @@ const logData: LogItemData[] = [
     indent: 1,
     type: "attempt",
     label: "Attempt 1",
-    start: 1.5,
-    duration: 22.5,
-    color: "gray-dark",
+    icon: "cpu",
+    start: 1.1,
+    duration: 16.9,
+    color: "blue",
     isCollapsible: true,
   },
   {
     id: "3",
     parentId: "2",
     indent: 2,
-    type: "task",
-    label: "extract-audio",
+    type: "step",
+    label: "Fetch database records",
+    icon: "check-circle",
     start: 2,
-    duration: 10,
+    duration: 3,
     color: "green",
-    isCollapsible: true,
   },
   {
     id: "4",
-    parentId: "3",
-    indent: 3,
-    type: "attempt",
-    label: "Attempt 1",
-    start: 2.5,
-    duration: 9.5,
-    color: "green",
-    isCollapsible: true,
+    parentId: "2",
+    indent: 2,
+    type: "step",
+    label: "Job halted, waiting for resources...",
+    icon: "pause-circle",
+    start: 5.5,
+    duration: 2,
+    color: "yellow",
   },
   {
     id: "5",
-    parentId: "4",
-    indent: 4,
-    type: "info",
-    label: "Fetch video from URL",
-    time: 3.5,
-    connection: { type: "solid", end: 4.5 },
+    parentId: "2",
+    indent: 2,
+    type: "step",
+    label: "Waiting for image renderer...",
+    icon: "file-code",
+    start: 8,
+    duration: 7,
+    color: "gray",
   },
   {
     id: "6",
-    parentId: "4",
-    indent: 4,
+    parentId: "2",
+    indent: 2,
     type: "step",
-    icon: "ffmpeg",
-    label: "Extract audio using FFmpeg",
-    start: 5,
-    duration: 4,
-    color: "gray-light",
+    label: "Render charts",
+    icon: "file-code",
+    start: 12,
+    duration: 4.6,
+    color: "blue",
   },
   {
     id: "7",
     parentId: "2",
     indent: 2,
-    type: "task",
-    label: "transcribe-audio",
-    start: 8.5,
-    duration: 9.5,
-    color: "blue",
-    isCollapsible: true,
-  },
-  {
-    id: "8",
-    parentId: "7",
-    indent: 3,
-    type: "attempt",
-    label: "Attempt 1",
-    start: 9,
-    duration: 9,
-    color: "blue",
-    isCollapsible: true,
-  },
-  {
-    id: "9",
-    parentId: "8",
-    indent: 4,
     type: "step",
-    icon: "swirl",
-    label: "transcribe.audio()",
-    start: 9.5,
-    duration: 0.8,
-    color: "gray-light",
+    label: "Assemble PDF",
+    icon: "file-code",
+    start: 15.5,
+    duration: 2,
+    color: "blue",
   },
-  {
-    id: "10",
-    parentId: "8",
-    indent: 4,
-    type: "info",
-    label: "Audio summary created",
-    time: 11.5,
-    connection: { type: "dashed", end: 13 },
-  },
-  {
-    id: "11",
-    parentId: "2",
-    indent: 2,
-    type: "task",
-    label: "upload-to-s3",
-    start: 13.5,
-    duration: 6.5,
-    color: "gray-dark",
-    isCollapsible: true,
-  },
-  {
-    id: "12",
-    parentId: "11",
-    indent: 3,
-    type: "attempt",
-    label: "Attempt 1",
-    start: 14,
-    duration: 6,
-    color: "gray-dark",
-    isCollapsible: true,
-  },
-  {
-    id: "13",
-    parentId: "12",
-    indent: 4,
-    type: "step",
-    icon: "aws",
-    label: "s3.upload()",
-    time: 15,
-    connection: { type: "dashed", end: 18 },
-  },
-  { id: "14", parentId: "12", indent: 4, type: "info", label: "Transcribed audio file upload", time: 20.5 },
 ]
 
-const TOTAL_DURATION = 24
-const timeMarkers = [
-  { time: 0, label: "0.0s" },
-  { time: 6, label: "6s" },
-  { time: 12, label: "12s" },
-  { time: 18, label: "18s" },
-  { time: 24, label: "24s" },
-]
+const TOTAL_DURATION = 18
+const timeMarkers = Array.from({ length: 10 }, (_, i) => ({ time: i * 2, label: `${i * 2}s` }))
 
 const getIcon = (item: LogItemData) => {
-  switch (item.type) {
-    case "task":
-      return (
-        <div className="bg-blue-500 text-white text-xs font-bold size-4 flex items-center justify-center rounded-sm shrink-0">
-          T
-        </div>
-      )
-    case "attempt":
-      return (
-        <div className="bg-gray-600 text-white text-xs font-bold size-4 flex items-center justify-center rounded-sm shrink-0">
-          A
-        </div>
-      )
-    case "info":
-      return <Info className="size-4 text-muted-foreground shrink-0" />
-    case "step":
-      switch (item.icon) {
-        case "ffmpeg":
-          return <Check className="size-4 text-green-500 shrink-0" />
-        case "swirl":
-          return <RefreshCw className="size-4 text-muted-foreground shrink-0" />
-        case "aws":
-          return <Cloud className="size-4 text-orange-500 shrink-0" />
-        default:
-          return <div className="size-4" />
-      }
+  const iconProps = {
+    className: cn("size-4 shrink-0", {
+      "text-purple-500": item.color === "purple",
+      "text-blue-500": item.color === "blue",
+      "text-gray-500": item.color === "gray",
+      "text-green-500": item.color === "green",
+      "text-yellow-500": item.color === "yellow",
+    }),
+  }
+
+  switch (item.icon) {
+    case "history":
+      return <History {...iconProps} />
+    case "file-code":
+      return <FileCode2 {...iconProps} />
+    case "cpu":
+      return <Cpu {...iconProps} />
+    case "check-circle":
+      return <CheckCircle2 {...iconProps} />
+    case "pause-circle":
+      return <PauseCircle {...iconProps} />
     default:
       return <div className="size-4" />
   }
@@ -211,10 +144,7 @@ const formatDuration = (seconds: number) => {
   if (seconds < 1) {
     return `${Math.round(seconds * 1000)}ms`
   }
-  if (seconds < 10) {
-    return `${seconds.toFixed(1)}s`
-  }
-  return `${Math.round(seconds)}s`
+  return `${seconds.toFixed(2)}s`
 }
 
 export function ExecutionTimeline() {
@@ -284,50 +214,31 @@ export function ExecutionTimeline() {
   const visibleLogData = logDataWithMeta.filter(isVisible)
 
   return (
-    <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
-      <div className="flex items-center p-2 border-b">
-        <div className="flex items-center gap-2 flex-1">
-          <Search className="size-4 text-muted-foreground" />
-          <input type="text" placeholder="Search logs" className="bg-transparent text-sm focus:outline-none w-full" />
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <button className="p-1 hover:bg-accent rounded">
-            <ChevronLeft className="size-4" />
-          </button>
-          <span>0.0s</span>
-          <button className="p-1 hover:bg-accent rounded">
-            <ChevronRight className="size-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
+    <div className="bg-background text-foreground font-sans rounded-lg border w-full max-w-4xl mx-auto shadow-sm overflow-hidden">
+      <div className="grid grid-cols-[minmax(300px,35%)_1fr]">
         {/* Sidebar */}
-        <div className="border-r overflow-x-auto">
+        <div className="border-r overflow-x-auto bg-background">
           <div className="h-8" /> {/* Spacer for timeline header */}
           {visibleLogData.map((item) => (
             <div
               key={item.id}
               className={cn(
-                "flex items-center relative group cursor-pointer h-[32px]",
-                hoveredId === item.id && "bg-accent",
+                "flex items-center relative group cursor-pointer h-[34px]",
+                hoveredId === item.id && "bg-muted",
               )}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
               {/* Guide Lines */}
-              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
+              <div className="absolute left-0 top-0 h-full flex items-center z-0">
                 {item.ancestors.map((ancestor, index) => {
                   const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
                   return (
-                    <div
-                      key={index}
-                      className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
-                    />
+                    <div key={index} className={cn("w-6 h-full", parentIsLast ? "" : "border-l", "border-border/50")} />
                   )
                 })}
                 {item.indent > 0 && (
-                  <div className="w-[1.24rem] h-full relative">
+                  <div className="w-6 h-full relative">
                     <div
                       className={cn(
                         "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
@@ -341,17 +252,20 @@ export function ExecutionTimeline() {
               </div>
 
               <div
-                className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10 bg-card"
-                style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
+                className="flex items-center gap-2 pr-2 text-sm whitespace-nowrap w-full z-10"
+                style={{ paddingLeft: `${item.indent * 1.5 + 0.5}rem` }}
               >
                 <div className="relative size-4 flex items-center justify-center">
                   {item.isCollapsible && (
                     <button
                       onClick={() => toggleItem(item.id)}
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-center justify-center"
                     >
                       <ChevronDown
-                        className={cn("size-4 transition-transform", !expandedItems.has(item.id) && "-rotate-90")}
+                        className={cn(
+                          "size-4 transition-transform text-muted-foreground",
+                          !expandedItems.has(item.id) && "-rotate-90",
+                        )}
                       />
                     </button>
                   )}
@@ -360,20 +274,15 @@ export function ExecutionTimeline() {
                   </div>
                 </div>
                 <span className="truncate">{item.label}</span>
-                {item.badge && (
-                  <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-md font-mono">
-                    {item.badge}
-                  </span>
-                )}
               </div>
             </div>
           ))}
         </div>
 
         {/* Timeline */}
-        <div className="relative overflow-x-auto">
+        <div className="relative overflow-x-auto bg-background">
           {/* Time Ruler */}
-          <div className="sticky top-0 z-10 bg-card">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
             <div className="relative h-8 border-b">
               {timeMarkers.map((marker) => (
                 <div
@@ -381,7 +290,9 @@ export function ExecutionTimeline() {
                   className="absolute top-0 h-full"
                   style={{ left: `${(marker.time / TOTAL_DURATION) * 100}%` }}
                 >
-                  <span className="absolute top-1 -translate-x-1/2 text-xs text-muted-foreground">{marker.label}</span>
+                  <span className="absolute top-1.5 -translate-x-1/2 text-xs text-muted-foreground">
+                    {marker.label}
+                  </span>
                   <div className="h-full w-px bg-border" />
                 </div>
               ))}
@@ -396,69 +307,37 @@ export function ExecutionTimeline() {
               const width = item.duration !== undefined ? (item.duration / TOTAL_DURATION) * 100 : 0
 
               const colorClasses = {
-                blue: "bg-chart-1",
-                green: "bg-chart-2",
-                "gray-dark": "bg-chart-3",
-                "gray-light": "bg-muted text-muted-foreground",
+                purple: "bg-purple-500/20 text-purple-800 dark:text-purple-300",
+                blue: "bg-blue-500/20 text-blue-800 dark:text-blue-300",
+                gray: "bg-gray-500/20 text-gray-800 dark:text-gray-300",
+                green: "bg-green-500/20 text-green-800 dark:text-green-300",
+                yellow: "bg-yellow-500/20 text-yellow-800 dark:text-yellow-300",
+              }
+
+              const stripeClasses = {
+                blue: "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(60,130,255,0.1)_4px,rgba(60,130,255,0.1)_8px)]",
               }
 
               return (
                 <div
                   key={item.id}
-                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-accent")}
+                  className={cn("relative h-[34px] cursor-pointer", hoveredId === item.id && "bg-muted")}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
                   {/* Bar */}
-                  {item.start !== undefined && (
+                  {item.start !== undefined && item.duration !== undefined && (
                     <div
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-4 rounded-sm flex items-center overflow-hidden",
-                        item.color && colorClasses[item.color],
+                        "absolute top-1/2 -translate-y-1/2 h-6 rounded-md flex items-center justify-end px-2 overflow-hidden",
+                        colorClasses[item.color],
+                        item.id === "1" && stripeClasses.blue,
                       )}
                       style={{ left: `${left}%`, width: `${width}%` }}
                     >
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-px bg-primary/50">
-                        <div
-                          className="absolute left-0 top-1/2 -translate-y-1/2 h-px bg-primary/50"
-                          style={{ width: "10px" }}
-                        />
-                      </div>
-                      {item.duration && width > 3 && (
-                        <span
-                          className={cn(
-                            "pl-1 text-xs whitespace-nowrap",
-                            item.color === "gray-light" ? "text-muted-foreground" : "text-primary-foreground/90",
-                          )}
-                        >
-                          {formatDuration(item.duration)}
-                        </span>
+                      {width > 15 && (
+                        <span className="text-xs font-medium whitespace-nowrap">{formatDuration(item.duration)}</span>
                       )}
-                    </div>
-                  )}
-                  {/* Point */}
-                  {item.time !== undefined && !item.start && (
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 size-1.5 bg-muted-foreground rounded-full"
-                      style={{ left: `calc(${left}% - 3px)` }}
-                    />
-                  )}
-                  {/* Connection Line */}
-                  {item.connection && (
-                    <div
-                      className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-px",
-                        item.connection.type === "solid"
-                          ? "bg-muted-foreground"
-                          : "border-t border-dashed border-muted-foreground",
-                      )}
-                      style={{
-                        left: `${(item.time! / TOTAL_DURATION) * 100}%`,
-                        width: `${((item.connection.end - item.time!) / TOTAL_DURATION) * 100}%`,
-                      }}
-                    >
-                      <div className="absolute -left-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                      <div className="absolute -right-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                     </div>
                   )}
                 </div>
