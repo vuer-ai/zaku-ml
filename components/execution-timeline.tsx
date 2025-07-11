@@ -327,7 +327,9 @@ export function ExecutionTimeline() {
                   className="absolute top-0 h-full"
                   style={{ left: `${(marker.time / TOTAL_DURATION) * 100}%` }}
                 >
-                  <span className="absolute top-1 -translate-x-1/2 text-xs text-muted-foreground">{marker.label}</span>
+                  <span className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card px-1 text-xs text-muted-foreground z-10">
+                    {marker.label}
+                  </span>
                   <div className="h-full w-px bg-border" />
                 </div>
               ))}
