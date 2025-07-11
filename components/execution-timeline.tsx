@@ -25,14 +25,12 @@ type LogItemData = {
   start?: number
   duration?: number
   time?: number
-  color?: "blue" | "green" | "yellow" | "gray-light"
+  color?: "blue" | "green" | "orange" | "gray-light"
   isCollapsible?: boolean
   hasStripes?: boolean
   connection?: {
     type: "solid" | "dashed"
     end: number
-    label?: string
-    labelDuration?: number
   }
 }
 
@@ -81,12 +79,19 @@ const logData: LogItemData[] = [
     start: 0.5,
     duration: 3,
     color: "green",
-    connection: {
-      type: "dashed",
-      end: 6.5,
-      label: "Halted",
-      labelDuration: 2,
-    },
+    connection: { type: "dashed", end: 4 },
+  },
+  {
+    id: "4",
+    parentId: "2",
+    indent: 2,
+    type: "step",
+    label: "Job halted, waiting for resources...",
+    icon: "pause-circle",
+    start: 4,
+    duration: 2,
+    color: "orange",
+    connection: { type: "dashed", end: 6.5 },
   },
   {
     id: "5",
@@ -340,7 +345,7 @@ export function ExecutionTimeline() {
               const colorClasses = {
                 blue: "bg-blue-500",
                 green: "bg-green-500",
-                yellow: "bg-yellow-500",
+                orange: "bg-orange-500",
                 "gray-light": "bg-muted",
               }
 
@@ -385,33 +390,24 @@ export function ExecutionTimeline() {
                   )}
                   {/* Connection Line from Bar */}
                   {item.connection && item.start !== undefined && item.duration !== undefined && (
-                    <>
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 h-2"
+                      style={{
+                        left: `${((item.start + item.duration) / TOTAL_DURATION) * 100}%`,
+                        width: `${((item.connection.end - (item.start + item.duration)) / TOTAL_DURATION) * 100}%`,
+                      }}
+                    >
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                       <div
                         className={cn(
-                          "absolute top-1/2 -translate-y-1/2 h-px",
+                          "absolute top-1/2 -translate-y-1/2 w-full h-px",
                           item.connection.type === "solid"
                             ? "bg-muted-foreground"
                             : "border-t border-dashed border-muted-foreground",
                         )}
-                        style={{
-                          left: `${((item.start + item.duration) / TOTAL_DURATION) * 100}%`,
-                          width: `${((item.connection.end - (item.start + item.duration)) / TOTAL_DURATION) * 100}%`,
-                        }}
                       />
-                      {item.connection.label && item.connection.labelDuration && (
-                        <div
-                          className="absolute top-1/2 -translate-y-1/2 z-10"
-                          style={{
-                            left: `${((item.start + item.duration + item.connection.end) / 2 / TOTAL_DURATION) * 100}%`,
-                            transform: "translate(-50%, -50%)",
-                          }}
-                        >
-                          <div className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 text-xs font-medium whitespace-nowrap">
-                            {item.connection.label} {formatDuration(item.connection.labelDuration)}
-                          </div>
-                        </div>
-                      )}
-                    </>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                    </div>
                   )}
                 </div>
               )
