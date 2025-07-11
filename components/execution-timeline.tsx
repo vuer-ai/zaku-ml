@@ -119,7 +119,7 @@ const logData: LogItemData[] = [
     icon: "swirl",
     label: "transcribe.audio()",
     start: 9.5,
-    duration: 1.5,
+    duration: 0.8,
     color: "gray-light",
   },
   {
@@ -169,7 +169,6 @@ const logData: LogItemData[] = [
 const TOTAL_DURATION = 24
 const timeMarkers = [
   { time: 0, label: "0.0s" },
-  { time: 5.1, label: "5.1s" },
   { time: 6, label: "6s" },
   { time: 12, label: "12s" },
   { time: 18, label: "18s" },
@@ -191,21 +190,31 @@ const getIcon = (item: LogItemData) => {
         </div>
       )
     case "info":
-      return <Info className="size-4 text-gray-400 shrink-0" />
+      return <Info className="size-4 text-muted-foreground shrink-0" />
     case "step":
       switch (item.icon) {
         case "ffmpeg":
-          return <Check className="size-4 text-green-400 shrink-0" />
+          return <Check className="size-4 text-green-500 shrink-0" />
         case "swirl":
-          return <RefreshCw className="size-4 text-gray-400 shrink-0" />
+          return <RefreshCw className="size-4 text-muted-foreground shrink-0" />
         case "aws":
-          return <Cloud className="size-4 text-orange-400 shrink-0" />
+          return <Cloud className="size-4 text-orange-500 shrink-0" />
         default:
           return <div className="size-4" />
       }
     default:
       return <div className="size-4" />
   }
+}
+
+const formatDuration = (seconds: number) => {
+  if (seconds < 1) {
+    return `${Math.round(seconds * 1000)}ms`
+  }
+  if (seconds < 10) {
+    return `${seconds.toFixed(1)}s`
+  }
+  return `${Math.round(seconds)}s`
 }
 
 export function ExecutionTimeline() {
@@ -275,18 +284,18 @@ export function ExecutionTimeline() {
   const visibleLogData = logDataWithMeta.filter(isVisible)
 
   return (
-    <div className="bg-[#111113] text-gray-300 font-sans rounded-lg border border-gray-800 w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
-      <div className="flex items-center p-2 border-b border-gray-800">
+    <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
+      <div className="flex items-center p-2 border-b">
         <div className="flex items-center gap-2 flex-1">
-          <Search className="size-4 text-gray-500" />
+          <Search className="size-4 text-muted-foreground" />
           <input type="text" placeholder="Search logs" className="bg-transparent text-sm focus:outline-none w-full" />
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <button className="p-1 hover:bg-gray-700 rounded">
+          <button className="p-1 hover:bg-accent rounded">
             <ChevronLeft className="size-4" />
           </button>
           <span>0.0s</span>
-          <button className="p-1 hover:bg-gray-700 rounded">
+          <button className="p-1 hover:bg-accent rounded">
             <ChevronRight className="size-4" />
           </button>
         </div>
@@ -294,26 +303,26 @@ export function ExecutionTimeline() {
 
       <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
         {/* Sidebar */}
-        <div className="border-r border-gray-800 overflow-x-auto">
+        <div className="border-r overflow-x-auto">
           <div className="h-8" /> {/* Spacer for timeline header */}
           {visibleLogData.map((item) => (
             <div
               key={item.id}
               className={cn(
-                "flex items-center relative group cursor-pointer",
-                hoveredId === item.id && "bg-gray-800/50",
+                "flex items-center relative group cursor-pointer h-[32px]",
+                hoveredId === item.id && "bg-accent",
               )}
               onMouseEnter={() => setHoveredId(item.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
               {/* Guide Lines */}
-              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-10">
+              <div className="absolute left-[-0.28rem] top-0 h-full flex items-center z-0">
                 {item.ancestors.map((ancestor, index) => {
                   const parentIsLast = logDataWithMeta.find((d) => d.id === ancestor.id)?.isLast
                   return (
                     <div
                       key={index}
-                      className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-gray-700")}
+                      className={cn("w-[1.25rem] h-full", parentIsLast ? "" : "border-l", "border-border/50")}
                     />
                   )
                 })}
@@ -323,16 +332,16 @@ export function ExecutionTimeline() {
                       className={cn(
                         "absolute top-0 left-0 w-1/2 h-1/2 border-b border-l",
                         item.isLast ? "rounded-bl-md" : "",
-                        "border-gray-700",
+                        "border-border/50",
                       )}
                     />
-                    {!item.isLast && <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-gray-700" />}
+                    {!item.isLast && <div className="absolute top-1/2 left-0 w-1/2 h-1/2 border-l border-border/50" />}
                   </div>
                 )}
               </div>
 
               <div
-                className="flex items-center gap-2 px-2 py-1.5 text-sm whitespace-nowrap w-full z-0"
+                className="flex items-center gap-2 px-2 text-sm whitespace-nowrap w-full z-10 bg-card"
                 style={{ paddingLeft: `${item.indent * 1.25 + 0.5}rem` }}
               >
                 <div className="relative size-4 flex items-center justify-center">
@@ -350,9 +359,9 @@ export function ExecutionTimeline() {
                     {getIcon(item)}
                   </div>
                 </div>
-                <span className="truncate m-0 -ml-0.25 border-0">{item.label}</span>
+                <span className="truncate">{item.label}</span>
                 {item.badge && (
-                  <span className="text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded-md font-mono">
+                  <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-md font-mono">
                     {item.badge}
                   </span>
                 )}
@@ -364,16 +373,16 @@ export function ExecutionTimeline() {
         {/* Timeline */}
         <div className="relative overflow-x-auto">
           {/* Time Ruler */}
-          <div className="sticky top-0 z-10 bg-[#111113]">
-            <div className="relative h-8 border-b border-gray-800">
+          <div className="sticky top-0 z-10 bg-card">
+            <div className="relative h-8 border-b">
               {timeMarkers.map((marker) => (
                 <div
                   key={marker.time}
                   className="absolute top-0 h-full"
                   style={{ left: `${(marker.time / TOTAL_DURATION) * 100}%` }}
                 >
-                  <span className="absolute top-1 -translate-x-1/2 text-xs text-gray-500">{marker.label}</span>
-                  <div className="h-full w-px bg-gray-800" />
+                  <span className="absolute top-1 -translate-x-1/2 text-xs text-muted-foreground">{marker.label}</span>
+                  <div className="h-full w-px bg-border" />
                 </div>
               ))}
             </div>
@@ -387,22 +396,16 @@ export function ExecutionTimeline() {
               const width = item.duration !== undefined ? (item.duration / TOTAL_DURATION) * 100 : 0
 
               const colorClasses = {
-                blue: "bg-blue-500/80",
-                green: "bg-lime-400",
-                "gray-dark": "bg-gray-500/80",
-                "gray-light": "bg-gray-700",
-              }
-
-              const stripeClasses = {
-                blue: "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.1)_4px,rgba(0,0,0,0.1)_8px)]",
-                "gray-dark":
-                  "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.2)_4px,rgba(0,0,0,0.2)_8px)]",
+                blue: "bg-chart-1",
+                green: "bg-chart-2",
+                "gray-dark": "bg-chart-3",
+                "gray-light": "bg-muted text-muted-foreground",
               }
 
               return (
                 <div
                   key={item.id}
-                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-gray-800/50")}
+                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-accent")}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
@@ -410,24 +413,33 @@ export function ExecutionTimeline() {
                   {item.start !== undefined && (
                     <div
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 h-4 rounded-sm",
+                        "absolute top-1/2 -translate-y-1/2 h-4 rounded-sm flex items-center overflow-hidden",
                         item.color && colorClasses[item.color],
-                        item.color && stripeClasses[item.color as keyof typeof stripeClasses],
                       )}
                       style={{ left: `${left}%`, width: `${width}%` }}
                     >
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-px bg-blue-400">
+                      <div className="absolute left-0 top-1/2 -translate-y-1/2 h-full w-px bg-primary/50">
                         <div
-                            className="absolute left top-1/2 -translate-y-1/2 h-px bg-blue-400"
-                            style={{width: "10px"}}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 h-px bg-primary/50"
+                          style={{ width: "10px" }}
                         />
                       </div>
+                      {item.duration && width > 3 && (
+                        <span
+                          className={cn(
+                            "pl-1 text-xs whitespace-nowrap",
+                            item.color === "gray-light" ? "text-muted-foreground" : "text-primary-foreground/90",
+                          )}
+                        >
+                          {formatDuration(item.duration)}
+                        </span>
+                      )}
                     </div>
                   )}
                   {/* Point */}
                   {item.time !== undefined && !item.start && (
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 size-1.5 bg-gray-500 rounded-full"
+                      className="absolute top-1/2 -translate-y-1/2 size-1.5 bg-muted-foreground rounded-full"
                       style={{ left: `calc(${left}% - 3px)` }}
                     />
                   )}
@@ -436,15 +448,17 @@ export function ExecutionTimeline() {
                     <div
                       className={cn(
                         "absolute top-1/2 -translate-y-1/2 h-px",
-                        item.connection.type === "solid" ? "bg-gray-600" : "border-t border-dashed border-gray-600",
+                        item.connection.type === "solid"
+                          ? "bg-muted-foreground"
+                          : "border-t border-dashed border-muted-foreground",
                       )}
                       style={{
                         left: `${(item.time! / TOTAL_DURATION) * 100}%`,
                         width: `${((item.connection.end - item.time!) / TOTAL_DURATION) * 100}%`,
                       }}
                     >
-                      <div className="absolute -left-px top-1/2 -translate-y-1/2 h-2 w-px bg-gray-600" />
-                      <div className="absolute -right-px top-1/2 -translate-y-1/2 h-2 w-px bg-gray-600" />
+                      <div className="absolute -left-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                      <div className="absolute -right-px top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                     </div>
                   )}
                 </div>
