@@ -481,7 +481,6 @@ export function ExecutionTimeline() {
                       "absolute top-1/2", 
                       "-translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground pointer-events-none",
                       "z-" + zInd,
-                      
                       )}
                       style={{ left: `${clampedCenterPercent}%` }}
                     >
