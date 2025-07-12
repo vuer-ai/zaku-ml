@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import type React from "react"
+
+import { useState, useMemo, useRef } from "react"
 import {
   Search,
   ChevronLeft,
@@ -129,19 +131,6 @@ const logData: LogItemData[] = [
 ]
 
 const TOTAL_DURATION = 22
-const timeMarkers = [
-  { time: 2, label: "2s" },
-  { time: 4, label: "4s" },
-  { time: 6, label: "6s" },
-  { time: 8, label: "8s" },
-  { time: 10, label: "10s" },
-  { time: 12, label: "12s" },
-  { time: 14, label: "14s" },
-  { time: 16, label: "16s" },
-  { time: 18, label: "18s" },
-  { time: 20, label: "20s" },
-  { time: 22, label: "22s" },
-]
 
 const getIcon = (item: LogItemData) => {
   const iconColor = (item: LogItemData) => {
@@ -167,6 +156,9 @@ const getIcon = (item: LogItemData) => {
 }
 
 const formatDuration = (seconds: number) => {
+  if (seconds < 0.01) {
+    return `${(seconds * 1000).toFixed(2)}ms`
+  }
   if (seconds < 1) {
     return `${Math.round(seconds * 1000)}ms`
   }
@@ -253,6 +245,64 @@ export function ExecutionTimeline() {
 
   const visibleLogData = logDataWithMeta.filter(isVisible)
 
+  const timelineContainerRef = useRef<HTMLDivElement>(null)
+  const [viewStart, setViewStart] = useState(-TOTAL_DURATION * 0.25)
+  const [viewDuration, setViewDuration] = useState(TOTAL_DURATION * 1.5)
+
+  const timeToPercent = (time: number) => ((time - viewStart) / viewDuration) * 100
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!e.ctrlKey && !e.altKey) return
+    e.preventDefault()
+
+    const container = timelineContainerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const cursorX = e.clientX - rect.left
+
+    const timeAtCursor = viewStart + (cursorX / container.offsetWidth) * viewDuration
+    const zoomFactor = 1.1
+
+    const newDuration = e.deltaY < 0 ? viewDuration / zoomFactor : viewDuration * zoomFactor
+
+    const minDuration = 0.01 // 10ms
+    const maxDuration = TOTAL_DURATION * 10
+    if (newDuration < minDuration || newDuration > maxDuration) {
+      return
+    }
+
+    const newViewStart = timeAtCursor - (cursorX / container.offsetWidth) * newDuration
+
+    setViewDuration(newDuration)
+    setViewStart(newViewStart)
+  }
+
+  const handlePan = (direction: "left" | "right") => {
+    const panAmount = viewDuration * 0.1
+    if (direction === "left") {
+      setViewStart((s) => s - panAmount)
+    } else {
+      setViewStart((s) => s + panAmount)
+    }
+  }
+
+  const dynamicTimeMarkers = useMemo(() => {
+    const markers = []
+    const niceIntervals = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
+    const targetMarkerCount = 10
+
+    const rawInterval = viewDuration / targetMarkerCount
+    const interval = niceIntervals.find((i) => i > rawInterval) || niceIntervals[niceIntervals.length - 1]
+
+    const firstMarkerTime = Math.ceil(viewStart / interval) * interval
+
+    for (let time = firstMarkerTime; time < viewStart + viewDuration; time += interval) {
+      markers.push({ time, label: formatDuration(time) })
+    }
+    return markers
+  }, [viewStart, viewDuration])
+
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
       <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
@@ -331,19 +381,23 @@ export function ExecutionTimeline() {
         </div>
 
         {/* Timeline */}
-        <div className="relative overflow-x-auto">
+        <div
+          className="relative overflow-x-hidden cursor-grab active:cursor-grabbing"
+          ref={timelineContainerRef}
+          onWheel={handleWheel}
+        >
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
-              {timeMarkers.map((marker) => (
+              {dynamicTimeMarkers.map((marker) => (
                 <div
                   key={marker.time}
                   className="absolute top-0 h-full"
-                  style={{ left: `${(marker.time / TOTAL_DURATION) * 100}%` }}
+                  style={{ left: `${timeToPercent(marker.time)}%` }}
                 >
-                  <span className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card px-1 text-xs text-muted-foreground z-10">
+                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-10">
                     {marker.label}
-                  </span>
+                  </div>
                   <div className="h-full w-px bg-border" />
                 </div>
               ))}
@@ -358,7 +412,7 @@ export function ExecutionTimeline() {
               return (
                 <div
                   key={item.id}
-                  className={cn("relative h-[32px] cursor-pointer", hoveredId === item.id && "bg-accent")}
+                  className={cn("relative h-[32px]", hoveredId === item.id && "bg-accent")}
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
@@ -370,8 +424,8 @@ export function ExecutionTimeline() {
                       <div
                         className="absolute top-1/2 -translate-y-1/2 h-2"
                         style={{
-                          left: `${(item.createTime / TOTAL_DURATION) * 100}%`,
-                          width: `${((item.startTime - item.createTime) / TOTAL_DURATION) * 100}%`,
+                          left: `${timeToPercent(item.createTime)}%`,
+                          width: `${((item.startTime - item.createTime) / viewDuration) * 100}%`,
                         }}
                       >
                         <div
@@ -399,11 +453,11 @@ export function ExecutionTimeline() {
                           "bg-[repeating-linear-gradient(-45deg,transparent,transparent_4px,rgba(0,0,0,0.1)_4px,rgba(0,0,0,0.1)_8px)]",
                       )}
                       style={{
-                        left: `${(item.startTime / TOTAL_DURATION) * 100}%`,
-                        width: `${(item.duration / TOTAL_DURATION) * 100}%`,
+                        left: `${timeToPercent(item.startTime)}%`,
+                        width: `${(item.duration / viewDuration) * 100}%`,
                       }}
                     >
-                      {(item.duration / TOTAL_DURATION) * 100 > 5 && (
+                      {(item.duration / viewDuration) * 100 > 5 && (
                         <span
                           className={cn(
                             "text-xs font-medium whitespace-nowrap",
@@ -424,7 +478,7 @@ export function ExecutionTimeline() {
                         borderColorClasses[item.color],
                       )}
                       style={{
-                        left: `${(item.startTime / TOTAL_DURATION) * 100}%`,
+                        left: `${timeToPercent(item.startTime)}%`,
                       }}
                     />
                   )}
@@ -434,8 +488,8 @@ export function ExecutionTimeline() {
                     <div
                       className="absolute top-1/2 -translate-y-1/2 h-full flex items-center"
                       style={{
-                        left: `${(item.startTime / TOTAL_DURATION) * 100}%`,
-                        width: `${(item.duration / TOTAL_DURATION) * 100}%`,
+                        left: `${timeToPercent(item.startTime)}%`,
+                        width: `${(item.duration / viewDuration) * 100}%`,
                       }}
                     >
                       <div className="relative w-full h-full flex items-center justify-center">
@@ -453,7 +507,7 @@ export function ExecutionTimeline() {
                   {item.time !== undefined && (
                     <div
                       className="absolute top-1/2 -translate-y-1/2 size-2 rounded-full"
-                      style={{ left: `calc(${(item.time / TOTAL_DURATION) * 100}% - 4px)` }}
+                      style={{ left: `calc(${timeToPercent(item.time)}% - 4px)` }}
                     >
                       {getIcon(item)}
                     </div>
@@ -464,11 +518,11 @@ export function ExecutionTimeline() {
           </div>
           <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
             <div className="flex items-center gap-2 text-sm bg-card border rounded-full p-1 shadow-lg">
-              <button className="p-1 hover:bg-accent rounded-full">
+              <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronLeft className="size-4" />
               </button>
-              <span>0.0s</span>
-              <button className="p-1 hover:bg-accent rounded-full">
+              <span className="text-xs w-16 text-center font-mono">{formatDuration(viewDuration)}</span>
+              <button onClick={() => handlePan("right")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronRight className="size-4" />
               </button>
             </div>
