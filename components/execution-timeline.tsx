@@ -165,17 +165,28 @@ const formatDuration = (seconds: number) => {
   return `${seconds.toFixed(2)}s`
 }
 
-const formatTickLabel = (seconds: number) => {
+const formatTickLabel = (seconds: number, shownSeconds: Set<number>) => {
   const sign = seconds < 0 ? "-" : ""
   const absSeconds = Math.abs(seconds)
 
-  if (absSeconds < 1) {
-    return `${sign}${Math.round(absSeconds * 1000)}ms`
+  let s = Math.floor(absSeconds)
+  let ms = Math.round((absSeconds - s) * 1000)
+
+  if (ms >= 1000) {
+    s += 1
+    ms -= 1000
   }
 
-  const s = Math.floor(absSeconds)
-  const ms = Math.round((absSeconds - s) * 1000)
+  if (absSeconds < 1) {
+    return `${sign}${ms}ms`
+  }
 
+  const baseSecond = s
+  if (shownSeconds.has(baseSecond)) {
+    return ms > 0 ? `+${ms}ms` : ""
+  }
+
+  shownSeconds.add(baseSecond)
   if (ms === 0) {
     return `${sign}${s}s`
   }
@@ -272,30 +283,28 @@ export function ExecutionTimeline() {
   const timeToPercent = (time: number) => ((time - viewStart) / viewDuration) * 100
 
   const handleWheel = (e: React.WheelEvent) => {
-    if (!e.ctrlKey && !e.altKey) return
     e.preventDefault()
-
     const container = timelineContainerRef.current
     if (!container) return
 
-    const rect = container.getBoundingClientRect()
-    const cursorX = e.clientX - rect.left
-
-    const timeAtCursor = viewStart + (cursorX / container.offsetWidth) * viewDuration
-    const zoomFactor = 1.1
-
-    const newDuration = e.deltaY < 0 ? viewDuration / zoomFactor : viewDuration * zoomFactor
-
-    const minDuration = 0.01 // 10ms
-    const maxDuration = TOTAL_DURATION * 10
-    if (newDuration < minDuration || newDuration > maxDuration) {
-      return
+    if (e.ctrlKey || e.altKey) {
+      // Zooming
+      const rect = container.getBoundingClientRect()
+      const cursorX = e.clientX - rect.left
+      const timeAtCursor = viewStart + (cursorX / container.offsetWidth) * viewDuration
+      const zoomFactor = 1.1
+      const newDuration = e.deltaY < 0 ? viewDuration / zoomFactor : viewDuration * zoomFactor
+      const minDuration = 0.01 // 10ms
+      const maxDuration = TOTAL_DURATION * 10
+      if (newDuration < minDuration || newDuration > maxDuration) return
+      const newViewStart = timeAtCursor - (cursorX / container.offsetWidth) * newDuration
+      setViewDuration(newDuration)
+      setViewStart(newViewStart)
+    } else {
+      // Panning
+      const panAmount = (e.deltaY / container.offsetHeight) * viewDuration
+      setViewStart((s) => s + panAmount)
     }
-
-    const newViewStart = timeAtCursor - (cursorX / container.offsetWidth) * newDuration
-
-    setViewDuration(newDuration)
-    setViewStart(newViewStart)
   }
 
   const handlePan = (direction: "left" | "right") => {
@@ -311,14 +320,16 @@ export function ExecutionTimeline() {
     const markers = []
     const niceIntervals = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
     const targetMarkerCount = 10
-
     const rawInterval = viewDuration / targetMarkerCount
     const interval = niceIntervals.find((i) => i > rawInterval) || niceIntervals[niceIntervals.length - 1]
-
     const firstMarkerTime = Math.ceil(viewStart / interval) * interval
+    const shownSeconds = new Set<number>()
 
     for (let time = firstMarkerTime; time < viewStart + viewDuration; time += interval) {
-      markers.push({ time, label: formatTickLabel(time) })
+      const label = formatTickLabel(time, shownSeconds)
+      if (label) {
+        markers.push({ time, label })
+      }
     }
     return markers
   }, [viewStart, viewDuration])
@@ -482,7 +493,7 @@ export function ExecutionTimeline() {
                           className={cn(
                             "text-xs font-medium whitespace-nowrap",
                             item.color === "gray-light" || item.color === "gray-medium"
-                              ? "text-muted-foreground"
+                              ? "text-slate-600 dark:text-slate-300"
                               : "text-white",
                           )}
                         >
@@ -543,7 +554,7 @@ export function ExecutionTimeline() {
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronLeft className="size-4" />
               </button>
-              <span className="text-xs w-20 text-center font-mono">{formatTickLabel(viewDuration)}</span>
+              <span className="text-xs w-20 text-center font-mono">{formatDuration(viewDuration)}</span>
               <button onClick={() => handlePan("right")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronRight className="size-4" />
               </button>
