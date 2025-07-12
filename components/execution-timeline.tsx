@@ -165,7 +165,7 @@ const formatDuration = (seconds: number) => {
   return `${seconds.toFixed(2)}s`
 }
 
-const formatTickLabel = (seconds: number, shownSeconds: Set<number>) => {
+const formatTickLabel = (seconds: number) => {
   const sign = seconds < 0 ? "-" : ""
   const absSeconds = Math.abs(seconds)
 
@@ -178,15 +178,9 @@ const formatTickLabel = (seconds: number, shownSeconds: Set<number>) => {
   }
 
   if (absSeconds < 1) {
-    return `${sign}${ms}ms`
+    return `${sign}${Math.round(absSeconds * 1000)}ms`
   }
 
-  const baseSecond = s
-  if (shownSeconds.has(baseSecond)) {
-    return ms > 0 ? `+${ms}ms` : ""
-  }
-
-  shownSeconds.add(baseSecond)
   if (ms === 0) {
     return `${sign}${s}s`
   }
@@ -302,8 +296,9 @@ export function ExecutionTimeline() {
       setViewStart(newViewStart)
     } else {
       // Panning
-      const panAmount = (e.deltaY / container.offsetHeight) * viewDuration
-      setViewStart((s) => s + panAmount)
+      const panX = (e.deltaX / container.offsetWidth) * viewDuration
+      const panY = (e.deltaY / container.offsetWidth) * viewDuration
+      setViewStart((s) => s + panX + panY)
     }
   }
 
@@ -323,13 +318,9 @@ export function ExecutionTimeline() {
     const rawInterval = viewDuration / targetMarkerCount
     const interval = niceIntervals.find((i) => i > rawInterval) || niceIntervals[niceIntervals.length - 1]
     const firstMarkerTime = Math.ceil(viewStart / interval) * interval
-    const shownSeconds = new Set<number>()
 
     for (let time = firstMarkerTime; time < viewStart + viewDuration; time += interval) {
-      const label = formatTickLabel(time, shownSeconds)
-      if (label) {
-        markers.push({ time, label })
-      }
+      markers.push({ time, label: formatTickLabel(time) })
     }
     return markers
   }, [viewStart, viewDuration])
@@ -487,21 +478,49 @@ export function ExecutionTimeline() {
                         left: `${timeToPercent(item.startTime)}%`,
                         width: `${(item.duration / viewDuration) * 100}%`,
                       }}
-                    >
-                      {(item.duration / viewDuration) * 100 > 5 && (
-                        <span
-                          className={cn(
-                            "text-xs font-medium whitespace-nowrap",
-                            item.color === "gray-light" || item.color === "gray-medium"
-                              ? "text-slate-600 dark:text-slate-300"
-                              : "text-white",
-                          )}
-                        >
-                          {formatDuration(item.duration)}
-                        </span>
-                      )}
-                    </div>
+                    />
                   )}
+
+                  {/* Visible Label for Execution Bar */}
+                  {item.startTime !== undefined &&
+                    item.duration !== undefined &&
+                    !isHaltedStep &&
+                    (() => {
+                      const barStart = item.startTime
+                      const barEnd = barStart + item.duration
+                      const viewEnd = viewStart + viewDuration
+
+                      const visibleStart = Math.max(barStart, viewStart)
+                      const visibleEnd = Math.min(barEnd, viewEnd)
+
+                      if (visibleEnd <= visibleStart) return null
+
+                      const visibleDuration = visibleEnd - visibleStart
+                      const visibleWidthPercent = (visibleDuration / viewDuration) * 100
+
+                      if (visibleWidthPercent < 4) return null
+
+                      return (
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 h-5 flex items-center justify-center pointer-events-none"
+                          style={{
+                            left: `${timeToPercent(visibleStart)}%`,
+                            width: `${visibleWidthPercent}%`,
+                          }}
+                        >
+                          <span
+                            className={cn(
+                              "text-xs font-medium whitespace-nowrap",
+                              item.color === "gray-light" || item.color === "gray-medium"
+                                ? "text-slate-600 dark:text-slate-300"
+                                : "text-white",
+                            )}
+                          >
+                            {formatDuration(item.duration)}
+                          </span>
+                        </div>
+                      )
+                    })()}
 
                   {/* Start Circle */}
                   {item.startTime !== undefined && item.duration !== undefined && !isHaltedStep && item.color && (
