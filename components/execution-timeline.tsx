@@ -91,6 +91,7 @@ const logData: LogItemData[] = [
     icon: "pause-circle",
     startTime: 4,
     duration: 2,
+    color: "orange",
   },
   {
     id: "5",
