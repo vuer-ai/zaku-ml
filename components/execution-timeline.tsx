@@ -165,29 +165,6 @@ const formatDuration = (seconds: number) => {
   return `${seconds.toFixed(2)}s`
 }
 
-const formatTickLabel = (seconds: number) => {
-  const sign = seconds < 0 ? "-" : ""
-  const absSeconds = Math.abs(seconds)
-
-  let s = Math.floor(absSeconds)
-  let ms = Math.round((absSeconds - s) * 1000)
-
-  if (ms >= 1000) {
-    s += 1
-    ms -= 1000
-  }
-
-  if (absSeconds < 1) {
-    return `${sign}${Math.round(absSeconds * 1000)}ms`
-  }
-
-  if (ms === 0) {
-    return `${sign}${s}s`
-  }
-
-  return `${sign}${s}s + ${ms}ms`
-}
-
 const borderColorClasses = {
   blue: "border-blue-500",
   green: "border-green-500",
@@ -319,8 +296,42 @@ export function ExecutionTimeline() {
     const interval = niceIntervals.find((i) => i > rawInterval) || niceIntervals[niceIntervals.length - 1]
     const firstMarkerTime = Math.ceil(viewStart / interval) * interval
 
+    const shownSeconds = new Set<number>()
+
+    const formatTickLabel = (seconds: number) => {
+      const sign = seconds < 0 ? "-" : ""
+      const absSeconds = Math.abs(seconds)
+
+      let s = Math.floor(absSeconds)
+      let ms = Math.round((absSeconds - s) * 1000)
+
+      if (ms >= 1000) {
+        s += 1
+        ms -= 1000
+      }
+
+      if (absSeconds < 1) {
+        return `${sign}${ms}ms`
+      }
+
+      const baseSecond = s * (sign === "-" ? -1 : 1)
+      if (shownSeconds.has(baseSecond)) {
+        return ms > 0 ? `+${ms}ms` : ""
+      }
+
+      shownSeconds.add(baseSecond)
+      if (ms === 0) {
+        return `${sign}${s}s`
+      }
+
+      return `${sign}${s}s`
+    }
+
     for (let time = firstMarkerTime; time < viewStart + viewDuration; time += interval) {
-      markers.push({ time, label: formatTickLabel(time) })
+      const label = formatTickLabel(time)
+      if (label) {
+        markers.push({ time, label })
+      }
     }
     return markers
   }, [viewStart, viewDuration])
