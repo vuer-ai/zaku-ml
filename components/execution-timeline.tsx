@@ -871,7 +871,7 @@ export function ExecutionTimeline() {
 
             {/* Time Readout */}
             <div
-              className="absolute top-1 flex items-center justify-center bg-card border rounded-md px-0 py-0.5 text-xs shadow-lg whitespace-nowrap"
+              className="absolute top-1 flex items-center justify-center bg-card border rounded-md -px-1 py-0.5 text-xs shadow-lg whitespace-nowrap"
               style={{
                 left: "var(--cursor-left)",
                 transform: "translateX(-50%)",
