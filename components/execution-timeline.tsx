@@ -359,12 +359,7 @@ export function ExecutionTimeline() {
         markers.push({ time: roundedTime, label })
       }
     }
-
-    const visibleMarkers = markers.filter((m) => m.time >= viewStart && m.time < viewEnd)
-    const stickyLeft = markers.filter((m) => m.time < viewStart).pop()
-    const stickyRight = markers.find((m) => m.time >= viewEnd)
-
-    return { visibleMarkers, stickyLeft, stickyRight }
+    return markers
   }, [viewStart, viewDuration])
 
   return (
@@ -453,13 +448,7 @@ export function ExecutionTimeline() {
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
-              {/* Sticky Left Label */}
-              {timeMarkers.stickyLeft && (
-                <div className="absolute top-1/2 left-1 -translate-y-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-20 pointer-events-none">
-                  {timeMarkers.stickyLeft.label}
-                </div>
-              )}
-              {timeMarkers.visibleMarkers.map((marker) => (
+              {timeMarkers.map((marker) => (
                 <div
                   key={marker.time}
                   className="absolute top-0 h-full"
@@ -471,12 +460,6 @@ export function ExecutionTimeline() {
                   <div className="h-full w-px bg-border" />
                 </div>
               ))}
-              {/* Sticky Right Label */}
-              {timeMarkers.stickyRight && (
-                <div className="absolute top-1/2 right-1 -translate-y-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-20 pointer-events-none">
-                  {timeMarkers.stickyRight.label}
-                </div>
-              )}
             </div>
           </div>
 
