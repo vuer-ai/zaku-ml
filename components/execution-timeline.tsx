@@ -600,12 +600,39 @@ export function ExecutionTimeline() {
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                         <div className="w-full border-t border-dashed border-muted-foreground" />
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                        <div className="absolute z-10 px-1 rounded-full bg-orange-500 text-white text-[9px] leading-tight font-medium whitespace-nowrap">
-                          {formatDuration(item.duration)}
-                        </div>
                       </div>
                     </div>
                   )}
+
+                  {/* Halted Step Label */}
+                  {isHaltedStep &&
+                    item.startTime !== undefined &&
+                    item.duration !== undefined &&
+                    (() => {
+                      const visibleStart = Math.max(barStart, viewStart)
+                      const visibleEnd = Math.min(barEnd, viewEnd)
+
+                      if (visibleEnd <= visibleStart) return null
+
+                      const visibleDuration = visibleEnd - visibleStart
+                      const visibleWidthPercent = (visibleDuration / viewDuration) * 100
+
+                      if (visibleWidthPercent < 4) return null
+
+                      return (
+                        <div
+                          className="absolute top-1/2 -translate-y-1/2 h-5 flex items-center justify-center pointer-events-none"
+                          style={{
+                            left: `${timeToPercent(visibleStart)}%`,
+                            width: `${visibleWidthPercent}%`,
+                          }}
+                        >
+                          <div className="px-2 h-5 flex items-center rounded-full bg-orange-500 text-white text-xs font-medium whitespace-nowrap">
+                            {formatDuration(item.duration)}
+                          </div>
+                        </div>
+                      )
+                    })()}
 
                   {/* Point in Time Event */}
                   {item.time !== undefined && (
@@ -637,7 +664,7 @@ export function ExecutionTimeline() {
                       "absolute w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",
                       leftWedgeClasses[item.color],
                     )}
-                    style={{ top: `${index * 32 + 16}px`, transform: "translateY(-50%)" }}
+                    style={{ top: `${32 + index * 32 + 16}px`, transform: "translateY(-50%)" }}
                   />
                 )
               }
@@ -663,7 +690,7 @@ export function ExecutionTimeline() {
                       "absolute w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",
                       rightWedgeClasses[item.color],
                     )}
-                    style={{ top: `${index * 32 + 16}px`, transform: "translateY(-50%)" }}
+                    style={{ top: `${32 + index * 32 + 16}px`, transform: "translateY(-50%)" }}
                   />
                 )
               }
