@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import {
   Search,
   ChevronLeft,
@@ -363,10 +363,6 @@ export function ExecutionTimeline() {
     return markers
   }, [viewStart, viewDuration])
 
-  const [hoverTime, setHoverTime] = useState<number | null>(null)
-  const [snappedTime, setSnappedTime] = useState<{ time: number; type: string } | null>(null)
-  const readoutRef = useRef<HTMLDivElement>(null)
-
   const keyEventTimes = useMemo(() => {
     const events: { time: number; type: string }[] = []
     const timeSet = new Set<string>()
@@ -390,38 +386,67 @@ export function ExecutionTimeline() {
     return events.sort((a, b) => a.time - b.time)
   }, [visibleLogData])
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const container = timelineContainerRef.current
-    if (!container) return
+  const cursorContainerRef = useRef<HTMLDivElement>(null)
+  const animationFrameRef = useRef<number>()
 
-    const rect = container.getBoundingClientRect()
-    const cursorX = e.clientX - rect.left
-    const rawHoverTime = viewStart + (cursorX / container.offsetWidth) * viewDuration
-    setHoverTime(rawHoverTime)
+  useEffect(() => {
+    const timelineEl = timelineContainerRef.current
+    const cursorEl = cursorContainerRef.current
+    if (!timelineEl || !cursorEl) return
 
-    // Snapping logic
-    const snapThresholdInPixels = 8
-    const snapThresholdInTime = (snapThresholdInPixels / container.offsetWidth) * viewDuration
+    const handleMouseMove = (e: MouseEvent) => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
 
-    let closestSnap: { time: number; type: string } | null = null
-    let minDistance = Number.POSITIVE_INFINITY
+      animationFrameRef.current = requestAnimationFrame(() => {
+        const rect = timelineEl.getBoundingClientRect()
+        const cursorX = e.clientX - rect.left
+        const rawHoverTime = viewStart + (cursorX / timelineEl.offsetWidth) * viewDuration
 
-    for (const event of keyEventTimes) {
-      const distance = Math.abs(event.time - rawHoverTime)
-      if (distance < minDistance && distance < snapThresholdInTime) {
-        minDistance = distance
-        closestSnap = event
+        // Snapping logic
+        const snapThresholdInPixels = 8
+        const snapThresholdInTime = (snapThresholdInPixels / timelineEl.offsetWidth) * viewDuration
+
+        let closestSnap: { time: number; type: string } | null = null
+        let minDistance = Number.POSITIVE_INFINITY
+
+        for (const event of keyEventTimes) {
+          const distance = Math.abs(event.time - rawHoverTime)
+          if (distance < minDistance && distance < snapThresholdInTime) {
+            minDistance = distance
+            closestSnap = event
+          }
+        }
+
+        const displayTime = closestSnap?.time ?? rawHoverTime
+        const percent = timeToPercent(displayTime)
+
+        cursorEl.style.setProperty("--cursor-left", `${percent}%`)
+        cursorEl.style.setProperty("--readout-text", `"${formatDuration(displayTime)}"`)
+        cursorEl.style.setProperty("--magnet-opacity", closestSnap ? "1" : "0")
+        cursorEl.classList.remove("opacity-0")
+      })
+    }
+
+    const handleMouseLeave = () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      cursorEl.classList.add("opacity-0")
+    }
+
+    timelineEl.addEventListener("mousemove", handleMouseMove)
+    timelineEl.addEventListener("mouseleave", handleMouseLeave)
+
+    return () => {
+      timelineEl.removeEventListener("mousemove", handleMouseMove)
+      timelineEl.removeEventListener("mouseleave", handleMouseLeave)
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
       }
     }
-    setSnappedTime(closestSnap)
-  }
-
-  const handleMouseLeave = () => {
-    setHoverTime(null)
-    setSnappedTime(null)
-  }
-
-  const displayTime = snappedTime?.time ?? hoverTime
+  }, [viewStart, viewDuration, keyEventTimes]) // Removed timeToPercent from dependencies
 
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
@@ -505,13 +530,11 @@ export function ExecutionTimeline() {
           className="relative overflow-x-hidden cursor-crosshair active:cursor-grabbing"
           ref={timelineContainerRef}
           onWheel={handleWheel}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
         >
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
-              {/* Snap Points */}
+              {/* These dots on the ruler indicate the positions of key events that the cursor can snap to. */}
               {keyEventTimes.map(({ time }) => {
                 const percent = timeToPercent(time)
                 if (percent < 0 || percent > 100) return null
@@ -576,11 +599,6 @@ export function ExecutionTimeline() {
               const barEnd =
                 item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
               const viewEnd = viewStart + viewDuration
-
-              const isClippedLeft =
-                barStart !== undefined && barEnd !== undefined && barStart < viewStart && barEnd > viewStart
-              const isClippedRight =
-                barStart !== undefined && barEnd !== undefined && barStart < viewEnd && barEnd > viewEnd
 
               return (
                 <div
@@ -681,26 +699,6 @@ export function ExecutionTimeline() {
                       }}
                     />
                   )}
-
-                  {/* Left Wedge Indicator */}
-                  {/*{isClippedLeft && item.color && (*/}
-                  {/*  <div*/}
-                  {/*    className={cn(*/}
-                  {/*      "absolute left-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",*/}
-                  {/*      leftWedgeClasses[item.color],*/}
-                  {/*    )}*/}
-                  {/*  />*/}
-                  {/*)}*/}
-
-                  {/* Right Wedge Indicator */}
-                  {/*{isClippedRight && item.color && (*/}
-                  {/*  <div*/}
-                  {/*    className={cn(*/}
-                  {/*      "absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",*/}
-                  {/*      rightWedgeClasses[item.color],*/}
-                  {/*    )}*/}
-                  {/*  />*/}
-                  {/*)}*/}
 
                   {/* Special Halted Step Visualization */}
                   {isHaltedStep && item.startTime !== undefined && item.duration !== undefined && (
@@ -809,28 +807,36 @@ export function ExecutionTimeline() {
               return null
             })}
           </div>
-          {displayTime !== null && (
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-30">
-              {/* Cursor Line */}
-              <div
-                className="absolute top-0 h-full w-px bg-red-500"
-                style={{ left: `${timeToPercent(displayTime)}%` }}
-              />
+          {/* Imperative Cursor and Readout */}
+          <div
+            ref={cursorContainerRef}
+            className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 opacity-0 transition-opacity duration-150"
+            style={
+              {
+                "--cursor-left": "0%",
+                "--readout-text": '""',
+                "--magnet-opacity": "0",
+              } as React.CSSProperties
+            }
+          >
+            {/* Cursor Line */}
+            <div className="absolute top-0 h-full w-px bg-red-500" style={{ left: "var(--cursor-left)" }} />
 
-              {/* Time Readout */}
-              <div
-                ref={readoutRef}
-                className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg whitespace-nowrap"
-                style={{
-                  left: `${timeToPercent(displayTime)}%`,
-                  transform: `translateX(clamp(-100% + 1rem, -50%, -1rem))`,
-                }}
-              >
-                <span>{formatDuration(displayTime)}</span>
-                {snappedTime !== null && <Magnet className="size-3 ml-1.5 text-muted-foreground" />}
-              </div>
+            {/* Time Readout */}
+            <div
+              className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg whitespace-nowrap"
+              style={{
+                left: "var(--cursor-left)",
+                transform: `translateX(clamp(-100% + 1rem, -50%, -1rem))`,
+              }}
+            >
+              <span className="after:content-[var(--readout-text)]" />
+              <Magnet
+                className="size-3 ml-1.5 text-muted-foreground transition-opacity"
+                style={{ opacity: "var(--magnet-opacity)" }}
+              />
             </div>
-          )}
+          </div>
           <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
             <div className="flex items-center gap-2 text-sm bg-card border rounded-full p-1 shadow-lg">
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
@@ -847,3 +853,4 @@ export function ExecutionTimeline() {
     </div>
   )
 }
+</merged_code>
