@@ -568,24 +568,24 @@ export function ExecutionTimeline() {
                   )}
 
                   {/* Left Wedge Indicator */}
-                  {isClippedLeft && item.color && (
-                    <div
-                      className={cn(
-                        "absolute left-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",
-                        leftWedgeClasses[item.color],
-                      )}
-                    />
-                  )}
+                  {/*{isClippedLeft && item.color && (*/}
+                  {/*  <div*/}
+                  {/*    className={cn(*/}
+                  {/*      "absolute left-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",*/}
+                  {/*      leftWedgeClasses[item.color],*/}
+                  {/*    )}*/}
+                  {/*  />*/}
+                  {/*)}*/}
 
                   {/* Right Wedge Indicator */}
-                  {isClippedRight && item.color && (
-                    <div
-                      className={cn(
-                        "absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",
-                        rightWedgeClasses[item.color],
-                      )}
-                    />
-                  )}
+                  {/*{isClippedRight && item.color && (*/}
+                  {/*  <div*/}
+                  {/*    className={cn(*/}
+                  {/*      "absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",*/}
+                  {/*      rightWedgeClasses[item.color],*/}
+                  {/*    )}*/}
+                  {/*  />*/}
+                  {/*)}*/}
 
                   {/* Special Halted Step Visualization */}
                   {isHaltedStep && item.startTime !== undefined && item.duration !== undefined && (
@@ -650,19 +650,17 @@ export function ExecutionTimeline() {
           {/* Left Wedges */}
           <div className="absolute top-0 left-0 h-full w-2 pointer-events-none z-10">
             {visibleLogData.map((item, index) => {
-              const barStart = item.startTime
               const barEnd =
                 item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
-              const isClippedLeft =
-                barStart !== undefined && barEnd !== undefined && barStart < viewStart && barEnd > viewStart
+              const isOffscreenLeft = barEnd !== undefined && barEnd < viewStart
 
-              if (isClippedLeft && item.color) {
+              if (isOffscreenLeft && item.color) {
                 return (
                   <div
                     key={`left-wedge-${item.id}`}
                     className={cn(
-                      "absolute w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",
-                      leftWedgeClasses[item.color],
+                      "absolute w-0 h-0 border-y-[6px] border-y-transparent border-r-[5px]",
+                      rightWedgeClasses[item.color],
                     )}
                     style={{ top: `${32 + index * 32 + 16}px`, transform: "translateY(-50%)" }}
                   />
@@ -676,19 +674,16 @@ export function ExecutionTimeline() {
           <div className="absolute top-0 right-0 h-full w-2 pointer-events-none z-10">
             {visibleLogData.map((item, index) => {
               const barStart = item.startTime
-              const barEnd =
-                item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
               const viewEnd = viewStart + viewDuration
-              const isClippedRight =
-                barStart !== undefined && barEnd !== undefined && barStart < viewEnd && barEnd > viewEnd
+              const isOffscreenRight = barStart !== undefined && barStart > viewEnd
 
-              if (isClippedRight && item.color) {
+              if (isOffscreenRight && item.color) {
                 return (
                   <div
                     key={`right-wedge-${item.id}`}
                     className={cn(
-                      "absolute w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",
-                      rightWedgeClasses[item.color],
+                      "absolute w-0 h-0 border-y-[6px] border-y-transparent border-l-[5px]",
+                      leftWedgeClasses[item.color],
                     )}
                     style={{ top: `${32 + index * 32 + 16}px`, transform: "translateY(-50%)" }}
                   />
