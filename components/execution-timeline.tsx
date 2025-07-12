@@ -28,7 +28,7 @@ type LogItemData = {
   startTime?: number
   duration?: number
   time?: number
-  color?: "blue" | "green" | "orange" | "gray-light"
+  color?: "blue" | "green" | "orange" | "gray-light" | "gray-medium"
   isCollapsible?: boolean
   hasStripes?: boolean
 }
@@ -102,7 +102,7 @@ const logData: LogItemData[] = [
     createTime: 6.0,
     startTime: 6.5,
     duration: 7,
-    color: "gray-light",
+    color: "gray-medium",
   },
   {
     id: "6",
@@ -165,11 +165,30 @@ const formatDuration = (seconds: number) => {
   return `${seconds.toFixed(2)}s`
 }
 
+const formatTickLabel = (seconds: number) => {
+  const sign = seconds < 0 ? "-" : ""
+  const absSeconds = Math.abs(seconds)
+
+  if (absSeconds < 1) {
+    return `${sign}${Math.round(absSeconds * 1000)}ms`
+  }
+
+  const s = Math.floor(absSeconds)
+  const ms = Math.round((absSeconds - s) * 1000)
+
+  if (ms === 0) {
+    return `${sign}${s}s`
+  }
+
+  return `${sign}${s}s + ${ms}ms`
+}
+
 const borderColorClasses = {
   blue: "border-blue-500",
   green: "border-green-500",
   orange: "border-orange-500",
   "gray-light": "border-muted",
+  "gray-medium": "border-slate-400 dark:border-slate-600",
 }
 
 const colorClasses = {
@@ -177,6 +196,7 @@ const colorClasses = {
   green: "bg-green-500",
   orange: "bg-orange-500",
   "gray-light": "bg-muted",
+  "gray-medium": "bg-slate-400 dark:bg-slate-700",
 }
 
 export function ExecutionTimeline() {
@@ -298,7 +318,7 @@ export function ExecutionTimeline() {
     const firstMarkerTime = Math.ceil(viewStart / interval) * interval
 
     for (let time = firstMarkerTime; time < viewStart + viewDuration; time += interval) {
-      markers.push({ time, label: formatDuration(time) })
+      markers.push({ time, label: formatTickLabel(time) })
     }
     return markers
   }, [viewStart, viewDuration])
@@ -461,7 +481,9 @@ export function ExecutionTimeline() {
                         <span
                           className={cn(
                             "text-xs font-medium whitespace-nowrap",
-                            item.color === "gray-light" ? "text-muted-foreground" : "text-white",
+                            item.color === "gray-light" || item.color === "gray-medium"
+                              ? "text-muted-foreground"
+                              : "text-white",
                           )}
                         >
                           {formatDuration(item.duration)}
@@ -496,7 +518,7 @@ export function ExecutionTimeline() {
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                         <div className="w-full border-t border-dashed border-muted-foreground" />
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                        <div className="absolute z-10 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px] leading-tight font-medium whitespace-nowrap">
+                        <div className="absolute z-10 px-1 rounded-full bg-orange-500 text-white text-[9px] leading-tight font-medium whitespace-nowrap">
                           {formatDuration(item.duration)}
                         </div>
                       </div>
@@ -521,7 +543,7 @@ export function ExecutionTimeline() {
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronLeft className="size-4" />
               </button>
-              <span className="text-xs w-16 text-center font-mono">{formatDuration(viewDuration)}</span>
+              <span className="text-xs w-20 text-center font-mono">{formatTickLabel(viewDuration)}</span>
               <button onClick={() => handlePan("right")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronRight className="size-4" />
               </button>
