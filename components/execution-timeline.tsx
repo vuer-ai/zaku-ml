@@ -466,6 +466,8 @@ export function ExecutionTimeline() {
                   Math.max(labelHalfWidthPercent, naturalCenterPercent),
                 )
 
+                const zInd = (ind < timeMarkers.length - 1) ? 10 : '[-1]';
+
                 return (
                   <React.Fragment key={marker.time}>
                     {/* The tick line, always at its natural position */}
@@ -475,7 +477,12 @@ export function ExecutionTimeline() {
                     />
                     {/* The label, with its position clamped to the viewport edges */}
                     <div
-                      className=`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-${ind<( timeMarkers.length - 1) ? "10" : "-1]"} pointer-events-none`
+                      className={cn(
+                      "absolute top-1/2", 
+                      "-translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground pointer-events-none",
+                      "z-" + zInd,
+                      
+                      )}
                       style={{ left: `${clampedCenterPercent}%` }}
                     >
                       {marker.label}
