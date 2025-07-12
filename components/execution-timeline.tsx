@@ -156,44 +156,55 @@ const getIcon = (item: LogItemData) => {
   }
 }
 
-const formatDuration = (seconds: number) => {
+const formatDuration = (seconds: number): string => {
   const sign = seconds < 0 ? "-" : ""
   const absSeconds = Math.abs(seconds)
 
-  if (absSeconds < 0.01) {
-    return `${sign}${(absSeconds * 1000).toFixed(2)}ms`
-  }
   if (absSeconds < 1) {
+    if (absSeconds < 0.0005) return "0s"
     return `${sign}${Math.round(absSeconds * 1000)}ms`
   }
   if (absSeconds < 60) {
     return `${sign}${absSeconds.toFixed(3)}s`
   }
 
-  const hours = Math.floor(absSeconds / 3600)
-  const minutes = Math.floor((absSeconds % 3600) / 60)
-  const remainingSeconds = absSeconds % 60
+  const SECONDS_IN_MINUTE = 60
+  const SECONDS_IN_HOUR = 3600
+  const SECONDS_IN_DAY = 86400
+  const SECONDS_IN_MONTH = 2592000 // 30 days
+  const SECONDS_IN_YEAR = 31536000 // 365 days
 
-  const parts = []
-  if (hours > 0) {
-    parts.push(`${hours}h`)
-  }
-  if (minutes > 0) {
-    parts.push(`${minutes}m`)
-  }
-  if (remainingSeconds > 1e-3 || (hours === 0 && minutes === 0)) {
-    const secStr = hours > 0 || minutes > 0 ? remainingSeconds.toFixed(1) : remainingSeconds.toFixed(2)
-    const secNum = Number.parseFloat(secStr)
-    if (secNum > 0) {
-      parts.push(`${secNum}s`)
-    }
+  if (absSeconds < SECONDS_IN_HOUR) {
+    const m = Math.floor(absSeconds / SECONDS_IN_MINUTE)
+    const s = absSeconds % SECONDS_IN_MINUTE
+    return `${sign}${m}m ${s.toFixed(2).padStart(5, "0")}s`
   }
 
-  if (parts.length === 0) {
-    return "0s"
+  if (absSeconds < SECONDS_IN_DAY) {
+    const h = Math.floor(absSeconds / SECONDS_IN_HOUR)
+    const m = Math.floor((absSeconds % SECONDS_IN_HOUR) / SECONDS_IN_MINUTE)
+    const s = Math.floor(absSeconds % SECONDS_IN_MINUTE)
+    return `${sign}${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`
   }
 
-  return sign + parts.join(" ")
+  if (absSeconds < SECONDS_IN_MONTH) {
+    const d = Math.floor(absSeconds / SECONDS_IN_DAY)
+    const h = Math.floor((absSeconds % SECONDS_IN_DAY) / SECONDS_IN_HOUR)
+    const m = Math.floor((absSeconds % SECONDS_IN_HOUR) / SECONDS_IN_MINUTE)
+    return `${sign}${d}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}m`
+  }
+
+  if (absSeconds < SECONDS_IN_YEAR) {
+    const mo = Math.floor(absSeconds / SECONDS_IN_MONTH)
+    const d = Math.floor((absSeconds % SECONDS_IN_MONTH) / SECONDS_IN_DAY)
+    const h = Math.floor((absSeconds % SECONDS_IN_DAY) / SECONDS_IN_HOUR)
+    return `${sign}${mo}mo ${String(d).padStart(3, "0")}d ${String(h).padStart(2, "0")}h`
+  }
+
+  const y = Math.floor(absSeconds / SECONDS_IN_YEAR)
+  const mo = Math.floor((absSeconds % SECONDS_IN_YEAR) / SECONDS_IN_MONTH)
+  const d = Math.floor((absSeconds % SECONDS_IN_MONTH) / SECONDS_IN_DAY)
+  return `${sign}${y}y ${String(mo).padStart(2, "0")}mo ${String(d).padStart(3, "0")}d`
 }
 
 const borderColorClasses = {
@@ -871,7 +882,7 @@ export function ExecutionTimeline() {
 
             {/* Time Readout */}
             <div
-              className="absolute top-1 flex items-center justify-center bg-card border rounded-md -px-1 py-0.5 text-xs shadow-lg whitespace-nowrap"
+              className="absolute top-1 flex items-center justify-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg whitespace-nowrap"
               style={{
                 left: "var(--cursor-left)",
                 transform: "translateX(-50%)",
