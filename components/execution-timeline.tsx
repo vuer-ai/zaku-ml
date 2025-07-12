@@ -173,6 +173,13 @@ const formatDuration = (seconds: number) => {
   return `${seconds.toFixed(2)}s`
 }
 
+const borderColorClasses = {
+  blue: "border-blue-500",
+  green: "border-green-500",
+  orange: "border-orange-500",
+  "gray-light": "border-muted",
+}
+
 export function ExecutionTimeline() {
   const [expandedItems, setExpandedItems] = useState(() => {
     const initial = new Set<string>()
@@ -397,6 +404,19 @@ export function ExecutionTimeline() {
                         </span>
                       )}
                     </div>
+                  )}
+
+                  {/* Start Circle */}
+                  {item.startTime !== undefined && item.duration !== undefined && !isHaltedStep && item.color && (
+                    <div
+                      className={cn(
+                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-3 rounded-full bg-card border-2 z-10",
+                        borderColorClasses[item.color],
+                      )}
+                      style={{
+                        left: `${(item.startTime / TOTAL_DURATION) * 100}%`,
+                      }}
+                    />
                   )}
 
                   {/* Special Halted Step Visualization */}
