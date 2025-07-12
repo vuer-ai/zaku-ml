@@ -362,7 +362,7 @@ export function ExecutionTimeline() {
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
-                  {/* Launch Wait Dashed Line */}
+                  {/* Launch Wait Line */}
                   {item.createTime !== undefined &&
                     item.startTime !== undefined &&
                     item.createTime < item.startTime && (
@@ -374,7 +374,7 @@ export function ExecutionTimeline() {
                         }}
                       >
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                        <div className="absolute top-1/2 -translate-y-1/2 w-full border-t border-dashed border-muted-foreground" />
+                        <div className="absolute top-1/2 -translate-y-1/2 w-full border-t border-muted-foreground" />
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                       </div>
                     )}
@@ -410,7 +410,7 @@ export function ExecutionTimeline() {
                   {item.startTime !== undefined && item.duration !== undefined && !isHaltedStep && item.color && (
                     <div
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-2 rounded-full bg-card border z-10",
+                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-1 rounded-full bg-card border-2 z-10",
                         borderColorClasses[item.color],
                       )}
                       style={{
