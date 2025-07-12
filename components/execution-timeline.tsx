@@ -620,6 +620,56 @@ export function ExecutionTimeline() {
               )
             })}
           </div>
+          {/* Left Wedges */}
+          <div className="absolute top-0 left-0 h-full w-2 pointer-events-none z-10">
+            {visibleLogData.map((item, index) => {
+              const barStart = item.startTime
+              const barEnd =
+                item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
+              const isClippedLeft =
+                barStart !== undefined && barEnd !== undefined && barStart < viewStart && barEnd > viewStart
+
+              if (isClippedLeft && item.color) {
+                return (
+                  <div
+                    key={`left-wedge-${item.id}`}
+                    className={cn(
+                      "absolute w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",
+                      leftWedgeClasses[item.color],
+                    )}
+                    style={{ top: `${index * 32 + 16}px`, transform: "translateY(-50%)" }}
+                  />
+                )
+              }
+              return null
+            })}
+          </div>
+
+          {/* Right Wedges */}
+          <div className="absolute top-0 right-0 h-full w-2 pointer-events-none z-10">
+            {visibleLogData.map((item, index) => {
+              const barStart = item.startTime
+              const barEnd =
+                item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
+              const viewEnd = viewStart + viewDuration
+              const isClippedRight =
+                barStart !== undefined && barEnd !== undefined && barStart < viewEnd && barEnd > viewEnd
+
+              if (isClippedRight && item.color) {
+                return (
+                  <div
+                    key={`right-wedge-${item.id}`}
+                    className={cn(
+                      "absolute w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",
+                      rightWedgeClasses[item.color],
+                    )}
+                    style={{ top: `${index * 32 + 16}px`, transform: "translateY(-50%)" }}
+                  />
+                )
+              }
+              return null
+            })}
+          </div>
           <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
             <div className="flex items-center gap-2 text-sm bg-card border rounded-full p-1 shadow-lg">
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
