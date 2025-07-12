@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import {
   Bot,
   CheckCircle2,
@@ -159,13 +159,15 @@ const getIcon = (item: LogItemData) => {
 const formatDuration = (seconds: number) => {
   const sign = seconds < 0 ? "-" : ""
   const absSeconds = Math.abs(seconds)
-  if (absSeconds < 0.01) {
-    return `${sign}${(absSeconds * 1000).toFixed(2)}ms`
-  }
+
   if (absSeconds < 1) {
-    return `${sign}${Math.round(absSeconds * 1000)}ms`
+    const ms = absSeconds * 1000
+    if (ms === 0) return "0ms"
+    // Use toPrecision to get 3 significant digits for milliseconds
+    return `${sign}${Number.parseFloat(ms.toPrecision(3))}ms`
   }
-  return `${sign}${absSeconds.toFixed(3)}s`
+  // Use toPrecision to get 3 significant digits for seconds
+  return `${sign}${Number.parseFloat(absSeconds.toPrecision(3))}s`
 }
 
 const borderColorClasses = {
@@ -274,7 +276,10 @@ export function ExecutionTimeline() {
   const [viewStart, setViewStart] = useState(-TOTAL_DURATION * 0.25)
   const [viewDuration, setViewDuration] = useState(TOTAL_DURATION * 1.5)
 
-  const timeToPercent = (time: number) => ((time - viewStart) / viewDuration) * 100
+  const timeToPercent = useCallback(
+    (time: number) => ((time - viewStart) / viewDuration) * 100,
+    [viewStart, viewDuration],
+  )
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault()
@@ -388,6 +393,7 @@ export function ExecutionTimeline() {
 
   const cursorContainerRef = useRef<HTMLDivElement>(null)
   const animationFrameRef = useRef<number>(null)
+  const [cursorState, setCursorState] = useState<{ time: number; isSnapped: boolean } | null>(null)
 
   useEffect(() => {
     const timelineEl = timelineContainerRef.current
@@ -423,9 +429,11 @@ export function ExecutionTimeline() {
         const percent = timeToPercent(displayTime)
 
         cursorEl.style.setProperty("--cursor-left", `${percent}%`)
-        cursorEl.style.setProperty("--readout-text", `"${formatDuration(displayTime)}"`)
-        cursorEl.style.setProperty("--magnet-opacity", closestSnap ? "1" : "0")
         cursorEl.classList.remove("opacity-0")
+        setCursorState({
+          time: displayTime,
+          isSnapped: !!closestSnap,
+        })
       })
     }
 
@@ -434,6 +442,7 @@ export function ExecutionTimeline() {
         cancelAnimationFrame(animationFrameRef.current)
       }
       cursorEl.classList.add("opacity-0")
+      setCursorState(null)
     }
 
     timelineEl.addEventListener("mousemove", handleMouseMove)
@@ -446,7 +455,7 @@ export function ExecutionTimeline() {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [viewStart, viewDuration, keyEventTimes]) // Removed timeToPercent from dependencies
+  }, [viewStart, viewDuration, keyEventTimes, timeToPercent])
 
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
@@ -815,8 +824,6 @@ export function ExecutionTimeline() {
             style={
               {
                 "--cursor-left": "0%",
-                "--readout-text": '""',
-                "--magnet-opacity": "0",
               } as React.CSSProperties
             }
           >
@@ -824,26 +831,30 @@ export function ExecutionTimeline() {
             <div className="absolute top-0 h-full w-px bg-red-500" style={{ left: "var(--cursor-left)" }} />
 
             {/* Time Readout */}
-            <div
-              className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg"
-              style={{
-                left: "var(--cursor-left)",
-                transform: `translateX(clamp(-100% + 1rem, -50%, -1rem))`,
-              }}
-            >
-              <Magnet
-                className="size-3 mr-1.5 text-muted-foreground transition-opacity"
-                style={{ opacity: "var(--magnet-opacity)" }}
-              />
-              <div className="font-mono tabular-nums text-right w-[8ch] after:content-[var(--readout-text)]" />
-            </div>
+            {cursorState && (
+              <div
+                className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg"
+                style={{
+                  left: "var(--cursor-left)",
+                  transform: `translateX(clamp(-100% + 1rem, -50%, -1rem))`,
+                }}
+              >
+                <Magnet
+                  className={cn(
+                    "size-3 mr-1.5 text-muted-foreground transition-opacity",
+                    cursorState.isSnapped ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                <span className="font-mono tabular-nums w-[7ch] text-right">{formatDuration(cursorState.time)}</span>
+              </div>
+            )}
           </div>
           <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
-            <div className="flex items-center gap-2 text-sm bg-card/75 backdrop-blur-[2px] rounded-full p-1 shadow-lg">
+            <div className="flex items-center gap-2 text-sm bg-card/75 backdrop-blur-sm rounded-full p-1 shadow-lg">
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronLeft className="size-4" />
               </button>
-              <span className="text-xs w-24 text-center font-mono">{formatDuration(viewDuration)}</span>
+              <span className="text-xs w-20 text-center font-mono">{formatDuration(viewDuration)}</span>
               <button onClick={() => handlePan("right")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronRight className="size-4" />
               </button>
