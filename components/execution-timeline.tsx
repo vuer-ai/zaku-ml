@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import {
   Bot,
   CheckCircle2,
@@ -159,13 +159,41 @@ const getIcon = (item: LogItemData) => {
 const formatDuration = (seconds: number) => {
   const sign = seconds < 0 ? "-" : ""
   const absSeconds = Math.abs(seconds)
+
   if (absSeconds < 0.01) {
     return `${sign}${(absSeconds * 1000).toFixed(2)}ms`
   }
   if (absSeconds < 1) {
     return `${sign}${Math.round(absSeconds * 1000)}ms`
   }
-  return `${sign}${absSeconds.toFixed(3)}s`
+  if (absSeconds < 60) {
+    return `${sign}${absSeconds.toFixed(3)}s`
+  }
+
+  const hours = Math.floor(absSeconds / 3600)
+  const minutes = Math.floor((absSeconds % 3600) / 60)
+  const remainingSeconds = absSeconds % 60
+
+  const parts = []
+  if (hours > 0) {
+    parts.push(`${hours}h`)
+  }
+  if (minutes > 0) {
+    parts.push(`${minutes}m`)
+  }
+  if (remainingSeconds > 1e-3 || (hours === 0 && minutes === 0)) {
+    const secStr = hours > 0 || minutes > 0 ? remainingSeconds.toFixed(1) : remainingSeconds.toFixed(2)
+    const secNum = Number.parseFloat(secStr)
+    if (secNum > 0) {
+      parts.push(`${secNum}s`)
+    }
+  }
+
+  if (parts.length === 0) {
+    return "0s"
+  }
+
+  return sign + parts.join(" ")
 }
 
 const borderColorClasses = {
@@ -387,66 +415,84 @@ export function ExecutionTimeline() {
   }, [visibleLogData])
 
   const cursorContainerRef = useRef<HTMLDivElement>(null)
-  const animationFrameRef = useRef<number>(null)
+  const lastClientX = useRef(0)
+  const isMouseOver = useRef(false)
+  const animationFrameRef = useRef<number | null>(null)
 
-  useEffect(() => {
+  const updateCursor = useCallback(() => {
+    if (!isMouseOver.current) return
+
     const timelineEl = timelineContainerRef.current
     const cursorEl = cursorContainerRef.current
     if (!timelineEl || !cursorEl) return
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
+    const rect = timelineEl.getBoundingClientRect()
+    const cursorX = lastClientX.current - rect.left
+    const rawHoverTime = viewStart + (cursorX / timelineEl.offsetWidth) * viewDuration
+
+    // Snapping logic
+    const snapThresholdInPixels = 8
+    const snapThresholdInTime = (snapThresholdInPixels / timelineEl.offsetWidth) * viewDuration
+
+    let closestSnap: { time: number; type: string } | null = null
+    let minDistance = Number.POSITIVE_INFINITY
+
+    for (const event of keyEventTimes) {
+      const distance = Math.abs(event.time - rawHoverTime)
+      if (distance < minDistance && distance < snapThresholdInTime) {
+        minDistance = distance
+        closestSnap = event
       }
+    }
 
-      animationFrameRef.current = requestAnimationFrame(() => {
-        const rect = timelineEl.getBoundingClientRect()
-        const cursorX = e.clientX - rect.left
-        const rawHoverTime = viewStart + (cursorX / timelineEl.offsetWidth) * viewDuration
+    const displayTime = closestSnap?.time ?? rawHoverTime
+    const percent = timeToPercent(displayTime)
 
-        // Snapping logic
-        const snapThresholdInPixels = 8
-        const snapThresholdInTime = (snapThresholdInPixels / timelineEl.offsetWidth) * viewDuration
+    cursorEl.style.setProperty("--cursor-left", `${percent}%`)
+    cursorEl.style.setProperty("--readout-text", `"${formatDuration(displayTime)}"`)
+    cursorEl.style.setProperty("--magnet-opacity", closestSnap ? "1" : "0")
+    cursorEl.classList.remove("opacity-0")
+  }, [viewStart, viewDuration, keyEventTimes])
 
-        let closestSnap: { time: number; type: string } | null = null
-        let minDistance = Number.POSITIVE_INFINITY
+  useEffect(() => {
+    const timelineEl = timelineContainerRef.current
+    if (!timelineEl) return
 
-        for (const event of keyEventTimes) {
-          const distance = Math.abs(event.time - rawHoverTime)
-          if (distance < minDistance && distance < snapThresholdInTime) {
-            minDistance = distance
-            closestSnap = event
-          }
-        }
+    const handleMouseMove = (e: MouseEvent) => {
+      lastClientX.current = e.clientX
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = requestAnimationFrame(updateCursor)
+    }
 
-        const displayTime = closestSnap?.time ?? rawHoverTime
-        const percent = timeToPercent(displayTime)
-
-        cursorEl.style.setProperty("--cursor-left", `${percent}%`)
-        cursorEl.style.setProperty("--readout-text", `"${formatDuration(displayTime)}"`)
-        cursorEl.style.setProperty("--magnet-opacity", closestSnap ? "1" : "0")
-        cursorEl.classList.remove("opacity-0")
-      })
+    const handleMouseEnter = () => {
+      isMouseOver.current = true
     }
 
     const handleMouseLeave = () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-      cursorEl.classList.add("opacity-0")
+      isMouseOver.current = false
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+      cursorContainerRef.current?.classList.add("opacity-0")
     }
 
     timelineEl.addEventListener("mousemove", handleMouseMove)
+    timelineEl.addEventListener("mouseenter", handleMouseEnter)
     timelineEl.addEventListener("mouseleave", handleMouseLeave)
 
     return () => {
       timelineEl.removeEventListener("mousemove", handleMouseMove)
+      timelineEl.removeEventListener("mouseenter", handleMouseEnter)
       timelineEl.removeEventListener("mouseleave", handleMouseLeave)
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
     }
-  }, [viewStart, viewDuration, keyEventTimes]) // Removed timeToPercent from dependencies
+  }, [updateCursor])
+
+  // This effect handles cursor updates on pan/zoom
+  useEffect(() => {
+    if (isMouseOver.current) {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = requestAnimationFrame(updateCursor)
+    }
+  }, [viewStart, viewDuration, updateCursor])
 
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
@@ -825,13 +871,11 @@ export function ExecutionTimeline() {
 
             {/* Time Readout */}
             <div
-              className="absolute top-1 flex items-center justify-center bg-card border rounded-md py-0.5 text-xs shadow-lg whitespace-nowrap"
+              className="absolute top-1 flex items-center justify-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg whitespace-nowrap"
               style={{
                 left: "var(--cursor-left)",
                 transform: "translateX(-50%)",
                 minWidth: "11ch",
-                paddingLeft: "0.75rem",
-                paddingRight: "0.75rem",
               }}
             >
               <Magnet
