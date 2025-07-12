@@ -475,7 +475,7 @@ export function ExecutionTimeline() {
                     />
                     {/* The label, with its position clamped to the viewport edges */}
                     <div
-                      className=`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-${ind<( timeMarkers.length - 1)} pointer-events-none`
+                      className=`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-${ind<( timeMarkers.length - 1) ? "10" : "-1]"} pointer-events-none`
                       style={{ left: `${clampedCenterPercent}%` }}
                     >
                       {marker.label}
