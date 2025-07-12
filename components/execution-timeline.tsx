@@ -475,7 +475,7 @@ export function ExecutionTimeline() {
                     />
                     {/* The label, with its position clamped to the viewport edges */}
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-10 pointer-events-none"
+                      className="absolute top-full mt-1 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-10 pointer-events-none"
                       style={{ left: `${clampedCenterPercent}%` }}
                     >
                       {marker.label}
@@ -487,7 +487,7 @@ export function ExecutionTimeline() {
           </div>
 
           {/* Timeline Bars */}
-          <div className="relative pb-12">
+          <div className="relative pt-6 pb-12">
             {visibleLogData.map((item) => {
               const isHaltedStep = item.id === "4"
               const barStart = item.startTime
