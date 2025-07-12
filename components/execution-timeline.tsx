@@ -165,7 +165,7 @@ const formatDuration = (seconds: number) => {
   if (absSeconds < 1) {
     return `${sign}${Math.round(absSeconds * 1000)}ms`
   }
-  return `${sign}${absSeconds.toFixed(2)}s`
+  return `${sign}${absSeconds.toFixed(3)}s`
 }
 
 const borderColorClasses = {
@@ -825,25 +825,25 @@ export function ExecutionTimeline() {
 
             {/* Time Readout */}
             <div
-              className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg whitespace-nowrap"
+              className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg"
               style={{
                 left: "var(--cursor-left)",
                 transform: `translateX(clamp(-100% + 1rem, -50%, -1rem))`,
               }}
             >
-              <span className="after:content-[var(--readout-text)]" />
               <Magnet
-                className="size-3 ml-1.5 text-muted-foreground transition-opacity"
+                className="size-3 mr-1.5 text-muted-foreground transition-opacity"
                 style={{ opacity: "var(--magnet-opacity)" }}
               />
+              <div className="font-mono tabular-nums text-right w-[8ch] after:content-[var(--readout-text)]" />
             </div>
           </div>
           <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
-            <div className="flex items-center gap-2 text-sm bg-card/75 backdrop-blur-sm rounded-full p-1 shadow-lg">
+            <div className="flex items-center gap-2 text-sm bg-card/75 backdrop-blur-[2px] rounded-full p-1 shadow-lg">
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronLeft className="size-4" />
               </button>
-              <span className="text-xs w-20 text-center font-mono">{formatDuration(viewDuration)}</span>
+              <span className="text-xs w-24 text-center font-mono">{formatDuration(viewDuration)}</span>
               <button onClick={() => handlePan("right")} className="p-1 hover:bg-accent rounded-full">
                 <ChevronRight className="size-4" />
               </button>
