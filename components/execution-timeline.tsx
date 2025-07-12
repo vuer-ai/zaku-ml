@@ -14,6 +14,7 @@ import {
   Bot,
   CheckCircle2,
   PauseCircle,
+  Magnet,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -362,6 +363,66 @@ export function ExecutionTimeline() {
     return markers
   }, [viewStart, viewDuration])
 
+  const [hoverTime, setHoverTime] = useState<number | null>(null)
+  const [snappedTime, setSnappedTime] = useState<{ time: number; type: string } | null>(null)
+  const readoutRef = useRef<HTMLDivElement>(null)
+
+  const keyEventTimes = useMemo(() => {
+    const events: { time: number; type: string }[] = []
+    const timeSet = new Set<string>()
+
+    const addEvent = (time: number, type: string) => {
+      const key = `${time.toFixed(6)}-${type}`
+      if (!timeSet.has(key)) {
+        events.push({ time, type })
+        timeSet.add(key)
+      }
+    }
+
+    visibleLogData.forEach((item) => {
+      if (item.createTime !== undefined) addEvent(item.createTime, "create")
+      if (item.startTime !== undefined) addEvent(item.startTime, "start")
+      if (item.startTime !== undefined && item.duration !== undefined) {
+        addEvent(item.startTime + item.duration, "end")
+      }
+      if (item.time !== undefined) addEvent(item.time, "event")
+    })
+    return events.sort((a, b) => a.time - b.time)
+  }, [visibleLogData])
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const container = timelineContainerRef.current
+    if (!container) return
+
+    const rect = container.getBoundingClientRect()
+    const cursorX = e.clientX - rect.left
+    const rawHoverTime = viewStart + (cursorX / container.offsetWidth) * viewDuration
+    setHoverTime(rawHoverTime)
+
+    // Snapping logic
+    const snapThresholdInPixels = 8
+    const snapThresholdInTime = (snapThresholdInPixels / container.offsetWidth) * viewDuration
+
+    let closestSnap: { time: number; type: string } | null = null
+    let minDistance = Number.POSITIVE_INFINITY
+
+    for (const event of keyEventTimes) {
+      const distance = Math.abs(event.time - rawHoverTime)
+      if (distance < minDistance && distance < snapThresholdInTime) {
+        minDistance = distance
+        closestSnap = event
+      }
+    }
+    setSnappedTime(closestSnap)
+  }
+
+  const handleMouseLeave = () => {
+    setHoverTime(null)
+    setSnappedTime(null)
+  }
+
+  const displayTime = snappedTime?.time ?? hoverTime
+
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
       <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
@@ -441,13 +502,28 @@ export function ExecutionTimeline() {
 
         {/* Timeline */}
         <div
-          className="relative overflow-x-hidden cursor-grab active:cursor-grabbing"
+          className="relative overflow-x-hidden cursor-crosshair active:cursor-grabbing"
           ref={timelineContainerRef}
           onWheel={handleWheel}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
         >
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
+              {/* Snap Points */}
+              {keyEventTimes.map(({ time }) => {
+                const percent = timeToPercent(time)
+                if (percent < 0 || percent > 100) return null
+                return (
+                  <div
+                    key={`snap-${time}`}
+                    className="absolute top-1/2 -translate-y-1/2 w-1 h-1 bg-muted-foreground/30 rounded-full z-0"
+                    style={{ left: `${percent}%` }}
+                  />
+                )
+              })}
+
               {timeMarkers.map((marker, ind) => {
                 const naturalCenterPercent = timeToPercent(marker.time)
 
@@ -466,7 +542,7 @@ export function ExecutionTimeline() {
                   Math.max(labelHalfWidthPercent, naturalCenterPercent),
                 )
 
-                const zInd = (ind < timeMarkers.length - 1) ? '10' : '[-1]';
+                const zInd = ind < timeMarkers.length - 1 ? "10" : "[-1]"
 
                 return (
                   <React.Fragment key={marker.time}>
@@ -478,9 +554,9 @@ export function ExecutionTimeline() {
                     {/* The label, with its position clamped to the viewport edges */}
                     <div
                       className={cn(
-                      "absolute top-1/2", 
-                      "-translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground pointer-events-none",
-                      "z-" + zInd,
+                        "absolute top-1/2",
+                        "-translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground pointer-events-none",
+                        "z-" + zInd,
                       )}
                       style={{ left: `${clampedCenterPercent}%` }}
                     >
@@ -733,6 +809,28 @@ export function ExecutionTimeline() {
               return null
             })}
           </div>
+          {displayTime !== null && (
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-30">
+              {/* Cursor Line */}
+              <div
+                className="absolute top-0 h-full w-px bg-red-500"
+                style={{ left: `${timeToPercent(displayTime)}%` }}
+              />
+
+              {/* Time Readout */}
+              <div
+                ref={readoutRef}
+                className="absolute top-1 flex items-center bg-card border rounded-md px-2 py-0.5 text-xs shadow-lg whitespace-nowrap"
+                style={{
+                  left: `${timeToPercent(displayTime)}%`,
+                  transform: `translateX(clamp(-100% + 1rem, -50%, -1rem))`,
+                }}
+              >
+                <span>{formatDuration(displayTime)}</span>
+                {snappedTime !== null && <Magnet className="size-3 ml-1.5 text-muted-foreground" />}
+              </div>
+            </div>
+          )}
           <div className="sticky bottom-4 left-1/2 -translate-x-1/2 z-20 w-max">
             <div className="flex items-center gap-2 text-sm bg-card border rounded-full p-1 shadow-lg">
               <button onClick={() => handlePan("left")} className="p-1 hover:bg-accent rounded-full">
