@@ -448,7 +448,7 @@ export function ExecutionTimeline() {
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
-              {timeMarkers.map((marker) => {
+              {timeMarkers.map((marker, ind) => {
                 const naturalCenterPercent = timeToPercent(marker.time)
 
                 // Filter out markers that are too far off-screen to improve performance
@@ -460,17 +460,11 @@ export function ExecutionTimeline() {
                 // It ensures the label doesn't sit flush against the edge.
                 const labelHalfWidthPercent = 3
 
-                const isStuckRight = naturalCenterPercent > 100 - labelHalfWidthPercent
-
                 // Clamp the label's center position to keep it within the viewport
                 const clampedCenterPercent = Math.min(
                   100 - labelHalfWidthPercent,
                   Math.max(labelHalfWidthPercent, naturalCenterPercent),
                 )
-
-                const verticalPositionClasses = isStuckRight
-                  ? "top-full mt-1" // If stuck on the right, move it below.
-                  : "top-1/2 -translate-y-1/2" // Otherwise, keep it centered.
 
                 return (
                   <React.Fragment key={marker.time}>
@@ -481,10 +475,7 @@ export function ExecutionTimeline() {
                     />
                     {/* The label, with its position clamped to the viewport edges */}
                     <div
-                      className={cn(
-                        "absolute -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-10 pointer-events-none",
-                        verticalPositionClasses,
-                      )}
+                      className=`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-${ind<( timeMarkers.length - 1)} pointer-events-none`
                       style={{ left: `${clampedCenterPercent}%` }}
                     >
                       {marker.label}
