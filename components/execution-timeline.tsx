@@ -28,7 +28,7 @@ type LogItemData = {
   startTime?: number
   duration?: number
   time?: number
-  color?: "blue" | "green" | "orange" | "gray-light" | "gray-medium"
+  color?: "blue" | "green" | "orange" | "gray-light" | "gray-medium" | "purple"
   isCollapsible?: boolean
   hasStripes?: boolean
 }
@@ -42,6 +42,7 @@ const logData: LogItemData[] = [
     label: "Job registered in queue",
     icon: "history",
     time: 0,
+    color: "purple",
   },
   {
     id: "1",
@@ -170,6 +171,7 @@ const borderColorClasses = {
   blue: "border-blue-500",
   green: "border-green-500",
   orange: "border-orange-500",
+  purple: "border-purple-500",
   "gray-light": "border-muted",
   "gray-medium": "border-slate-400 dark:border-slate-600",
 }
@@ -178,6 +180,7 @@ const colorClasses = {
   blue: "bg-blue-500",
   green: "bg-green-500",
   orange: "bg-orange-500",
+  purple: "bg-purple-500",
   "gray-light": "bg-muted",
   "gray-medium": "bg-slate-400 dark:bg-slate-700",
 }
@@ -186,6 +189,7 @@ const leftWedgeClasses = {
   blue: "border-l-blue-500",
   green: "border-l-green-500",
   orange: "border-l-orange-500",
+  purple: "border-l-purple-500",
   "gray-light": "border-l-slate-300 dark:border-l-slate-600",
   "gray-medium": "border-l-slate-400 dark:border-l-slate-500",
 }
@@ -194,6 +198,7 @@ const rightWedgeClasses = {
   blue: "border-r-blue-500",
   green: "border-r-green-500",
   orange: "border-r-orange-500",
+  purple: "border-r-purple-500",
   "gray-light": "border-r-slate-300 dark:border-r-slate-600",
   "gray-medium": "border-r-slate-400 dark:border-r-slate-500",
 }
@@ -305,14 +310,14 @@ export function ExecutionTimeline() {
     }
   }
 
-  const dynamicTimeMarkers = useMemo(() => {
-    const markers = []
+  const timeMarkers = useMemo(() => {
+    const markers: { time: number; label: string }[] = []
     const niceIntervals = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
     const targetMarkerCount = 10
     const rawInterval = viewDuration / targetMarkerCount
     const interval = niceIntervals.find((i) => i > rawInterval) || niceIntervals[niceIntervals.length - 1]
-    const firstMarkerTime = Math.ceil(viewStart / interval) * interval
 
+    const viewEnd = viewStart + viewDuration
     const shownSeconds = new Set<number>()
 
     const formatTickLabel = (seconds: number) => {
@@ -327,7 +332,7 @@ export function ExecutionTimeline() {
         ms -= 1000
       }
 
-      if (absSeconds < 1) {
+      if (absSeconds < 1 && absSeconds > -1) {
         return `${sign}${ms}ms`
       }
 
@@ -344,13 +349,22 @@ export function ExecutionTimeline() {
       return `${sign}${s}s`
     }
 
-    for (let time = firstMarkerTime; time < viewStart + viewDuration; time += interval) {
-      const label = formatTickLabel(time)
+    const firstMarkerTime = Math.floor(viewStart / interval) * interval
+    const lastMarkerTime = Math.ceil(viewEnd / interval) * interval
+
+    for (let time = firstMarkerTime; time <= lastMarkerTime; time += interval) {
+      const roundedTime = Number.parseFloat(time.toPrecision(15))
+      const label = formatTickLabel(roundedTime)
       if (label) {
-        markers.push({ time, label })
+        markers.push({ time: roundedTime, label })
       }
     }
-    return markers
+
+    const visibleMarkers = markers.filter((m) => m.time >= viewStart && m.time < viewEnd)
+    const stickyLeft = markers.filter((m) => m.time < viewStart).pop()
+    const stickyRight = markers.find((m) => m.time >= viewEnd)
+
+    return { visibleMarkers, stickyLeft, stickyRight }
   }, [viewStart, viewDuration])
 
   return (
@@ -439,7 +453,13 @@ export function ExecutionTimeline() {
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
-              {dynamicTimeMarkers.map((marker) => (
+              {/* Sticky Left Label */}
+              {timeMarkers.stickyLeft && (
+                <div className="absolute top-1/2 left-1 -translate-y-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-20 pointer-events-none">
+                  {timeMarkers.stickyLeft.label}
+                </div>
+              )}
+              {timeMarkers.visibleMarkers.map((marker) => (
                 <div
                   key={marker.time}
                   className="absolute top-0 h-full"
@@ -451,6 +471,12 @@ export function ExecutionTimeline() {
                   <div className="h-full w-px bg-border" />
                 </div>
               ))}
+              {/* Sticky Right Label */}
+              {timeMarkers.stickyRight && (
+                <div className="absolute top-1/2 right-1 -translate-y-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-20 pointer-events-none">
+                  {timeMarkers.stickyRight.label}
+                </div>
+              )}
             </div>
           </div>
 
@@ -653,7 +679,8 @@ export function ExecutionTimeline() {
             {visibleLogData.map((item, index) => {
               const barEnd =
                 item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
-              const isOffscreenLeft = barEnd !== undefined && barEnd < viewStart
+              const isOffscreenLeft =
+                (barEnd !== undefined && barEnd < viewStart) || (item.time !== undefined && item.time < viewStart)
 
               if (isOffscreenLeft && item.color) {
                 return (
@@ -676,7 +703,8 @@ export function ExecutionTimeline() {
             {visibleLogData.map((item, index) => {
               const barStart = item.startTime
               const viewEnd = viewStart + viewDuration
-              const isOffscreenRight = barStart !== undefined && barStart > viewEnd
+              const isOffscreenRight =
+                (barStart !== undefined && barStart > viewEnd) || (item.time !== undefined && item.time > viewEnd)
 
               if (isOffscreenRight && item.color) {
                 return (
