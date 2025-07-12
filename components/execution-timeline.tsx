@@ -181,6 +181,22 @@ const colorClasses = {
   "gray-medium": "bg-slate-400 dark:bg-slate-700",
 }
 
+const leftWedgeClasses = {
+  blue: "border-l-blue-500",
+  green: "border-l-green-500",
+  orange: "border-l-orange-500",
+  "gray-light": "border-l-slate-300 dark:border-l-slate-600",
+  "gray-medium": "border-l-slate-400 dark:border-l-slate-500",
+}
+
+const rightWedgeClasses = {
+  blue: "border-r-blue-500",
+  green: "border-r-green-500",
+  orange: "border-r-orange-500",
+  "gray-light": "border-r-slate-300 dark:border-r-slate-600",
+  "gray-medium": "border-r-slate-400 dark:border-r-slate-500",
+}
+
 export function ExecutionTimeline() {
   const [expandedItems, setExpandedItems] = useState(() => {
     const initial = new Set<string>()
@@ -441,6 +457,15 @@ export function ExecutionTimeline() {
           <div className="relative pb-12">
             {visibleLogData.map((item) => {
               const isHaltedStep = item.id === "4"
+              const barStart = item.startTime
+              const barEnd =
+                item.startTime !== undefined && item.duration !== undefined ? item.startTime + item.duration : undefined
+              const viewEnd = viewStart + viewDuration
+
+              const isClippedLeft =
+                barStart !== undefined && barEnd !== undefined && barStart < viewStart && barEnd > viewStart
+              const isClippedRight =
+                barStart !== undefined && barEnd !== undefined && barStart < viewEnd && barEnd > viewEnd
 
               return (
                 <div
@@ -497,10 +522,6 @@ export function ExecutionTimeline() {
                     item.duration !== undefined &&
                     !isHaltedStep &&
                     (() => {
-                      const barStart = item.startTime
-                      const barEnd = barStart + item.duration
-                      const viewEnd = viewStart + viewDuration
-
                       const visibleStart = Math.max(barStart, viewStart)
                       const visibleEnd = Math.min(barEnd, viewEnd)
 
@@ -543,6 +564,26 @@ export function ExecutionTimeline() {
                       style={{
                         left: `${timeToPercent(item.startTime)}%`,
                       }}
+                    />
+                  )}
+
+                  {/* Left Wedge Indicator */}
+                  {isClippedLeft && item.color && (
+                    <div
+                      className={cn(
+                        "absolute left-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-l-[8px]",
+                        leftWedgeClasses[item.color],
+                      )}
+                    />
+                  )}
+
+                  {/* Right Wedge Indicator */}
+                  {isClippedRight && item.color && (
+                    <div
+                      className={cn(
+                        "absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-y-[10px] border-y-transparent border-r-[8px]",
+                        rightWedgeClasses[item.color],
+                      )}
                     />
                   )}
 
