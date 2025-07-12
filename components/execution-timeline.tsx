@@ -180,6 +180,13 @@ const borderColorClasses = {
   "gray-light": "border-muted",
 }
 
+const colorClasses = {
+  blue: "bg-blue-500",
+  green: "bg-green-500",
+  orange: "bg-orange-500",
+  "gray-light": "bg-muted",
+}
+
 export function ExecutionTimeline() {
   const [expandedItems, setExpandedItems] = useState(() => {
     const initial = new Set<string>()
@@ -346,15 +353,7 @@ export function ExecutionTimeline() {
           {/* Timeline Bars */}
           <div className="relative pb-12">
             {visibleLogData.map((item) => {
-              const colorClasses = {
-                blue: "bg-blue-500",
-                green: "bg-green-500",
-                orange: "bg-orange-500",
-                "gray-light": "bg-muted",
-              }
-
               const isHaltedStep = item.id === "4"
-              const isWaitingForRenderer = item.id === "5"
 
               return (
                 <div
@@ -363,10 +362,11 @@ export function ExecutionTimeline() {
                   onMouseEnter={() => setHoveredId(item.id)}
                   onMouseLeave={() => setHoveredId(null)}
                 >
-                  {/* Launch Wait Dashed Line */}
+                  {/* Launch Wait Line */}
                   {item.createTime !== undefined &&
                     item.startTime !== undefined &&
-                    item.createTime < item.startTime && (
+                    item.createTime < item.startTime &&
+                    item.color && (
                       <div
                         className="absolute top-1/2 -translate-y-1/2 h-2"
                         style={{
@@ -374,14 +374,18 @@ export function ExecutionTimeline() {
                           width: `${((item.startTime - item.createTime) / TOTAL_DURATION) * 100}%`,
                         }}
                       >
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                        <div
+                          className={cn("absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px", colorClasses[item.color])}
+                        />
                         <div
                           className={cn(
-                            "absolute top-1/2 -translate-y-1/2 w-full border-t border-muted-foreground",
-                            isWaitingForRenderer ? "border-solid" : "border-dashed",
+                            "absolute top-1/2 -translate-y-1/2 w-full border-t",
+                            borderColorClasses[item.color],
                           )}
                         />
-                        <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
+                        <div
+                          className={cn("absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px", colorClasses[item.color])}
+                        />
                       </div>
                     )}
 
@@ -438,7 +442,7 @@ export function ExecutionTimeline() {
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
                         <div className="w-full border-t border-dashed border-muted-foreground" />
                         <div className="absolute right-0 top-1/2 -translate-y-1/2 h-2 w-px bg-muted-foreground" />
-                        <div className="absolute z-10 px-1.5 rounded-full bg-orange-500 text-white text-[9px] leading-tight font-medium whitespace-nowrap">
+                        <div className="absolute z-10 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px] leading-tight font-medium whitespace-nowrap">
                           {formatDuration(item.duration)}
                         </div>
                       </div>
