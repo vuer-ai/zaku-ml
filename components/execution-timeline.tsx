@@ -542,7 +542,7 @@ export function ExecutionTimeline() {
                   Math.max(labelHalfWidthPercent, naturalCenterPercent),
                 )
 
-                const zInd = ind < timeMarkers.length - 1 ? "10" : ""
+                const zInd = ind < timeMarkers.length - 1 ? "10" : "0"
 
                 return (
                   <React.Fragment key={marker.time}>
