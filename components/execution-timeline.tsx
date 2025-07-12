@@ -410,7 +410,7 @@ export function ExecutionTimeline() {
                   {item.startTime !== undefined && item.duration !== undefined && !isHaltedStep && item.color && (
                     <div
                       className={cn(
-                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-3 rounded-full bg-card border-2 z-10",
+                        "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-2 rounded-full bg-card border z-10",
                         borderColorClasses[item.color],
                       )}
                       style={{
