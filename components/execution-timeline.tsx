@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useMemo, useRef } from "react"
 import {
@@ -448,18 +448,41 @@ export function ExecutionTimeline() {
           {/* Time Ruler */}
           <div className="sticky top-0 z-10 bg-card">
             <div className="relative h-8 border-b">
-              {timeMarkers.map((marker) => (
-                <div
-                  key={marker.time}
-                  className="absolute top-0 h-full"
-                  style={{ left: `${timeToPercent(marker.time)}%` }}
-                >
-                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-10">
-                    {marker.label}
-                  </div>
-                  <div className="h-full w-px bg-border" />
-                </div>
-              ))}
+              {timeMarkers.map((marker) => {
+                const naturalCenterPercent = timeToPercent(marker.time)
+
+                // Filter out markers that are too far off-screen to improve performance
+                if (naturalCenterPercent < -20 || naturalCenterPercent > 120) {
+                  return null
+                }
+
+                // This is the offset from the edge, in percent.
+                // It ensures the label doesn't sit flush against the edge.
+                const labelHalfWidthPercent = 3
+
+                // Clamp the label's center position to keep it within the viewport
+                const clampedCenterPercent = Math.min(
+                  100 - labelHalfWidthPercent,
+                  Math.max(labelHalfWidthPercent, naturalCenterPercent),
+                )
+
+                return (
+                  <React.Fragment key={marker.time}>
+                    {/* The tick line, always at its natural position */}
+                    <div
+                      className="absolute top-0 h-full w-px bg-border"
+                      style={{ left: `${naturalCenterPercent}%` }}
+                    />
+                    {/* The label, with its position clamped to the viewport edges */}
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 bg-card/80 backdrop-blur-sm px-1 rounded-sm text-xs text-muted-foreground z-10 pointer-events-none"
+                      style={{ left: `${clampedCenterPercent}%` }}
+                    >
+                      {marker.label}
+                    </div>
+                  </React.Fragment>
+                )
+              })}
             </div>
           </div>
 
