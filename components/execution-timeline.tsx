@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
-import { useTheme } from "next-themes"
 import {
   Bot,
   CheckCircle2,
@@ -12,10 +11,8 @@ import {
   History,
   Info,
   Magnet,
-  Moon,
   PauseCircle,
   Search,
-  Sun,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -254,8 +251,6 @@ export function ExecutionTimeline() {
     })
     return initial
   })
-
-  const { theme, setTheme } = useTheme()
 
   const toggleItem = (id: string) => {
     setExpandedItems((prev) => {
@@ -512,19 +507,6 @@ export function ExecutionTimeline() {
 
   return (
     <div className="bg-card text-card-foreground font-sans rounded-lg border w-full max-w-7xl mx-auto shadow-2xl overflow-hidden">
-      {/* Header with theme toggle */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-card">
-        <h2 className="text-lg font-semibold">Execution Timeline</h2>
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="p-2 rounded-md hover:bg-accent transition-colors"
-          aria-label="Toggle theme"
-        >
-          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        </button>
-      </div>
-
       <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
         {/* Sidebar */}
         <div className="border-r flex flex-col">
