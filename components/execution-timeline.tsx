@@ -510,7 +510,7 @@ export function ExecutionTimeline() {
       <div className="grid grid-cols-[minmax(300px,30%)_1fr]">
         {/* Sidebar */}
         <div className="border-r flex flex-col">
-          <div className="flex items-center p-1 border-b h-[32px]">
+          <div className="flex items-center px-2 border-b h-[32px]">
             <Search className="size-4 text-muted-foreground" />
             <input
               type="text"
