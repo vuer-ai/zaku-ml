@@ -27,7 +27,7 @@ Add Zaku-ML knowledge to Claude Code for intelligent assistance with this librar
 **Option 1: Claude Code Command (Recommended)**
 
 ```bash
-# add https://raw.githubusercontent.com/vuer-ai/zaku-ml/main/skill/zaku-ml.md as a skill
+# add https://raw.githubusercontent.com/vuer-ai/zaku/main/skill/zaku.md as a skill
 ```
 
 **Option 2: CLAUDE.md Import**
@@ -35,7 +35,7 @@ Add Zaku-ML knowledge to Claude Code for intelligent assistance with this librar
 Add to your project's CLAUDE.md:
 
 ```markdown
-@import https://raw.githubusercontent.com/vuer-ai/zaku-ml/main/skill/zaku-ml.md
+@import https://raw.githubusercontent.com/vuer-ai/zaku/main/skill/zaku.md
 ```
 
 ## Getting Started
