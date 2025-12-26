@@ -1,36 +1,28 @@
-import Link from "next/link"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { projects } from "@/lib/data"
-import { ArrowRight } from "lucide-react"
+"use client"
 
-export default function ProjectsPage() {
+import { useTheme } from "next-themes"
+import { Moon, Sun } from "lucide-react"
+import { ExecutionTimeline } from "@/components/execution-timeline"
+
+export default function Home() {
+  const { theme, setTheme } = useTheme()
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold">Projects</h1>
-        </div>
-      </header>
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <Link href={`/projects/${project.id}`} key={project.id}>
-              <Card className="h-full flex flex-col hover:border-foreground/50 transition-colors">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {project.name}
-                    <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                  </CardTitle>
-                  <CardDescription>{project.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto">
-                  <p className="text-sm text-muted-foreground">{project.jobCount} jobs</p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </main>
-    </div>
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 md:p-24 bg-background">
+      {/* Theme toggle button */}
+      <div className="w-full max-w-7xl mb-4 flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Execution Timeline</h1>
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="relative p-2 rounded-md hover:bg-accent transition-colors border"
+          aria-label="Toggle theme"
+        >
+          <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+          <Moon className="absolute top-2 left-2 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        </button>
+      </div>
+
+      <ExecutionTimeline />
+    </main>
   )
 }
